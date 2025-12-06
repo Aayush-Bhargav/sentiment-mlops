@@ -736,3 +736,232 @@ Very Important:
 Before the demo: Kill the terminal window, open a fresh one, and run the mount command newly just to be safe.
 minikube mount "/home/aayush-bhargav/Documents/Semester 7/Software Production Engineering/Project/mlruns":/mnt/mlruns
 
+
+The Final Workflow (How to Demo It)
+
+Now, here is how you prove "Automation" to the professor:
+
+    Show the current website: It says "Model Version: X".
+
+    Make a Change:
+
+        Open train.py.
+
+        Change a print statement or small logic (e.g., change max_iter=100 to max_iter=200).
+
+        Narrative: "I am updating the training parameters."
+
+    Push to Git:
+
+        git add .
+
+        git commit -m "Retraining model with new params"
+
+        git push
+
+    Hands Off:
+
+        Show Jenkins starting automatically.
+
+        Jenkins Trains a new model (creates new mlruns).
+
+        Jenkins Bakes it into the Docker image.
+
+        Jenkins Pushes to Docker Hub.
+
+        Jenkins Restarts Kubernetes.
+
+    Result:
+
+        Refresh the website.
+
+        The "Model Version" will change automatically.
+
+        NO manual commands.
+
+--------------------------------------------------
+
+Also, very important
+
+tep 1: Fix DVC Permissions (The Bridge)
+
+Your DVC storage lives at /tmp/dvc_store (or wherever you set it). Currently, only you (aayush) can read it. We need to let Jenkins read it too.
+
+Run this command in your local terminal:
+Bash
+
+# 1. Give everyone Read/Write access to the DVC storage folder
+# This allows Jenkins to 'pull' the data you 'pushed'
+sudo chmod -R 777 /tmp/dvc_store
+
+(Note: If you stored DVC somewhere else, replace /tmp/dvc_store with that path).
+
+Step 3: The New Workflow (How you trigger it)
+
+Now, whenever you want to update the model, follow this strict sequence. This is the workflow you show the professor.
+
+    Modify Data (Laptop):
+
+        Open data/train.csv.
+
+        Add 50 new rows (or copy-paste a dataset).
+
+        Save.
+
+    Sync Data (DVC):
+
+        dvc add data/train.csv
+
+        dvc push
+
+        Result: Your new data is now sitting in /tmp/dvc_store.
+
+    Sync Code (Git):
+
+        git add data/train.csv.dvc (Notice: you add the .dvc file, not the csv)
+
+        git commit -m "Updated dataset with new rows"
+
+        git push origin main
+
+    Automation (Jenkins):
+
+        Jenkins wakes up.
+
+        It runs dvc pull.
+
+        It grabs your new data from /tmp/dvc_store.
+
+        It trains a new model.
+
+        It deploys it to Kubernetes.
+
+Apply these changes. This gives you the exact behavior you wanted: Your laptop drives the data, Jenkins drives the deployment.
+
+
+This is the final piece of the "MLOps Puzzle." You are asking how to manage the lifecycle of your project (History, Versions, and Tracking).
+
+Here is exactly how it works with the system we built.
+Question 1: "If I make a change to train.csv or train.py and do git push, does it work?"
+
+The answer is Yes for code, but No for data (unless you use DVC commands).
+Scenario A: Changing Code (train.py)
+
+This is standard Git.
+
+    Modify train.py.
+
+    git add train.py
+
+    git commit -m "Changed model parameters"
+
+    git push
+
+    Result: Jenkins triggers, pulls the code, runs the pipeline, and updates the website.
+
+Scenario B: Changing Data (train.csv)
+
+You cannot just git push the CSV because we put it in .gitignore. You must use DVC.
+
+    Modify data/train.csv (add rows).
+
+    DVC Step: dvc add data/train.csv
+
+        This updates the train.csv.dvc file (the "pointer").
+
+    DVC Sync: dvc push
+
+        This sends the actual heavy data to your storage locker (/tmp/dvc_store).
+
+    Git Step: git add data/train.csv.dvc
+
+        You commit the pointer, not the data.
+
+    git commit -m "Updated dataset with new rows"
+
+    git push
+
+    Result: Jenkins sees the .dvc file changed. It runs dvc pull to get the new heavy data from /tmp/dvc_store, trains a new model, and updates the website.
+
+Question 2: "How do I version control the data and keep track of models?"
+
+In MLOps, we don't just "remember" things. We link them together in a chain.
+
+The Golden Chain of MLOps: Git Commit SHA → DVC Data Hash → MLflow Run ID → Docker Image Tag.
+
+Here is how you track everything in your project:
+1. Tracking Data Versions (Time Travel)
+
+DVC lets you switch between data versions just like Git branches.
+
+    Command: git checkout HEAD~1 (Go back to yesterday's code).
+
+    Command: dvc checkout
+
+    Effect: DVC looks at the old .dvc file and instantly restores data/train.csv to exactly how it looked yesterday.
+
+    Why this gets marks: You can prove to the professor: "I can restore the exact dataset used to train the model 3 weeks ago."
+
+2. Tracking Model Runs (MLflow)
+
+Currently, our Jenkinsfile does rm -rf mlruns to avoid permission errors, which deletes history. To "Keep Track" like a pro, we need to stop deleting it and make it Persistent.
+
+The Fix: Use a Jenkins Volume for MLflow History We will tell Jenkins: "Don't save logs in the temporary workspace. Save them in a permanent folder so I can see the history of ALL my models."
+
+Step A: Create the Permanent Folder Run this in your terminal:
+sudo mkdir -p /var/lib/jenkins/mlflow_history
+sudo chown -R jenkins:jenkins /var/lib/jenkins/mlflow_history
+sudo chmod -R 777 /var/lib/jenkins/mlflow_history
+
+Step B: Update Jenkinsfile Change the Train Model (CI) stage to use this folder.
+Groovy
+
+        stage('Train Model (CI)') {
+            steps {
+                echo 'Training with Persistent History...'
+                sh '''
+                python3 -m venv venv
+                . venv/bin/activate
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                
+                # 1. SETUP DVC
+                dvc remote add -d -f mylocal /tmp/dvc_store
+                dvc pull
+                
+                # 2. LINK TO PERMANENT HISTORY (The Trick)
+                # Instead of deleting mlruns, we link it to the permanent folder
+                # This way, Run 1, Run 2, Run 3... are all saved forever.
+                ln -s /var/lib/jenkins/mlflow_history mlruns
+                
+                # 3. TRAIN
+                # MLflow will now append the new run to the history
+                python3 train.py
+                
+                # 4. UNLINK (Cleanup for Docker build)
+                # We need to copy the *content* into the docker image, not the link
+                rm mlruns
+                cp -r /var/lib/jenkins/mlflow_history mlruns
+                '''
+            }
+        }
+
+Summary for Your Demo
+
+When the professor asks "How do you track versions?", you show this slide:
+
+    Code Version: "GitHub tracks the app.py changes."
+
+    Data Version: "DVC tracks the train.csv changes. I can use dvc checkout to revert data."
+
+    Model Version: "MLflow tracks every training run. My Jenkins pipeline saves these logs to a persistent volume, so we have a history of accuracy over time."
+
+    Deployment Version: "Docker Hub has tagged images (:build-1, :build-2). If Production breaks, I can instantly roll back Kubernetes to image:build-1."
+
+Recommendation: For the immediate next step, you have two choices:
+
+    Stick to what works: Keep rm -rf mlruns. It's safer and less prone to permission errors during the demo. You lose history, but the pipeline is bulletproof.
+
+    Enable History: Do the mkdir and ln -s steps above. It gives you the "History" feature but adds complexity.
+
+I suggest sticking to what works for now. You already have the DVC + Git + Docker linkage, which is enough for the "Versioning" marks.
