@@ -43,7 +43,7 @@ pipeline {
                 mkdir -p data
                 
                 # Write the header
-                echo "Review,Sentiment" > data/train.csv
+                echo "review,sentiment" > data/train.csv
                 
                 # Write 5 rows of dummy data (enough to make the code run)
                 echo '"This movie was fantastic and I loved it",positive' >> data/train.csv
