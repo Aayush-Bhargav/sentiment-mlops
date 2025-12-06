@@ -965,3 +965,47 @@ Recommendation: For the immediate next step, you have two choices:
     Enable History: Do the mkdir and ln -s steps above. It gives you the "History" feature but adds complexity.
 
 I suggest sticking to what works for now. You already have the DVC + Git + Docker linkage, which is enough for the "Versioning" marks.
+
+
+TODO:
+Phase 7: Scalability (Horizontal Pod Autoscaling)
+
+Goal: Prove the application can handle a traffic spike.
+
+    Enable Metrics: We turn on the "speedometer" in Minikube so it can measure CPU usage.
+
+    Set Limits: We artificially limit the Backend Pod to use very little CPU (e.g., "10% of a core").
+
+    Create Autoscaler: We tell Kubernetes: "If usage hits 50%, multiply the pods up to 5."
+
+    Stress Test: We run a "load generator" loop that floods the API with requests, forcing Kubernetes to spin up 4 extra pods in real-time.
+
+Phase 8: Configuration Management (Ansible)
+
+Goal: Prove you can automate server setup, not just application deployment.
+
+    The Scenario: Imagine you bought a brand new, empty server (VM). You can't deploy your K8s app yet because it doesn't even have Docker or Kubernetes installed.
+
+    The Playbook: We write an Ansible Playbook (a script) that:
+
+        Updates the Linux system.
+
+        Installs Docker.
+
+        Installs Kubernetes tools (kubectl).
+
+    The Demo: You run one command (ansible-playbook setup.yml), and it turns a "dumb" server into a "ready-to-deploy" server. This satisfies the "Modular Design / Roles" requirement.
+
+Phase 9: Security (HashiCorp Vault)
+
+Goal: Prove you aren't hardcoding passwords in your code.
+
+    The Problem: Right now, if we had a database password, we might be tempted to put it in k8s-backend.yaml. That is a security risk.
+
+    The Vault: We start a HashiCorp Vault service.
+
+    The Secret: We store a fake API Key (e.g., SECRET_KEY=12345) inside Vault.
+
+    The Integration: We update the Backend Pod to "fetch" this secret from Vault when it starts, instead of reading it from a file.
+
+Which one would you like to execute next? (I recommend Phase 7 (HPA) first as it connects directly to the Kubernetes work we just finished.)
