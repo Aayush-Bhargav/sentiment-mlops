@@ -27,6 +27,7 @@ pipeline {
         }
 
         stage('Test') {
+            // fixed the test stage
             steps {
                 echo 'Setting up Python environment for testing...'
                 sh '''
