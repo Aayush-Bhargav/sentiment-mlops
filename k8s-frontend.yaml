@@ -37,3 +37,4 @@ spec:
       targetPort: 8501
       nodePort: 30001 # We fix this port so you know where to look
   type: NodePort # This opens the door to the outside world
+  # comment added
