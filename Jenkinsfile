@@ -28,29 +28,29 @@ pipeline {
 
         stage('Train Model (CI)') {
             steps {
-                echo 'Training the model inside Jenkins...'
+                echo 'Pulling REAL Data from DVC...'
                 sh '''
                 python3 -m venv venv
                 . venv/bin/activate
                 pip install --upgrade pip
                 pip install -r requirements.txt
                 
-                # 1. CLEANUP (Start fresh)
+                # 1. CLEANUP
                 rm -rf mlruns
                 rm -f mlflow.db
-                mkdir -p data
+                # Note: We do NOT remove the 'data' folder, DVC needs it.
                 
-                # 2. DATA INGESTION (Simulating DVC)
-                # We create the data here. In the "Story", this is DVC pulling data.
-                echo "review,sentiment" > data/train.csv
-                echo '"This movie was fantastic and I loved it",positive' >> data/train.csv
-                echo '"Terrible acting",negative' >> data/train.csv
-                echo '"I will never watch this",negative' >> data/train.csv
-                echo '"Best film",positive' >> data/train.csv
-                echo '"It was okay",positive' >> data/train.csv
+                # 2. CONFIGURE DVC (The Strong Connection)
+                # We tell Jenkins where the "Storage Locker" is.
+                # Jenkins uses the exact same folder your laptop uses.
+                dvc remote add -d -f mylocal /tmp/dvc_store
                 
-                # 3. TRAIN & LOG TO MLFLOW
-                # This generates the 'mlruns' folder with the new model
+                # 3. PULL DATA
+                # This downloads 'data/train.csv' from the storage locker.
+                # It will be the EXACT version you pushed from your laptop.
+                dvc pull
+                
+                # 4. TRAIN
                 python3 train.py
                 '''
             }
