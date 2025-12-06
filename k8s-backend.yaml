@@ -16,7 +16,7 @@ spec:
       - name: backend
         # IMPORTANT: Since we haven't pushed images to Docker Hub, 
         # we will tell K8s to look for the image on your laptop locally.
-        image: aayushbhargav57/mlops-backend:latest
+        image: praveenpeterjay2/mlops-backend:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
