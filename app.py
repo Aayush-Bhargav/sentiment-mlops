@@ -65,7 +65,7 @@ class MovieData(BaseModel):
 class MovieReviewData(BaseModel):
     """Schema for /reviews/{movie_id} endpoint response."""
     review_id: int
-    movie_id: str
+    movie_id: int
     review: str
 
 class ReviewInput(BaseModel):
