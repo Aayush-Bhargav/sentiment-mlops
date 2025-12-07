@@ -20,9 +20,9 @@ spec:
         - containerPort: 8000
         resources:
           requests:
-            cpu: "200m"
+            cpu: "100m"
           limits:
-            cpu: "400m"
+            cpu: "200m"
         env:
         - name: DB_HOST
           value: "postgres-service" 
@@ -65,4 +65,4 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 50
+        averageUtilization: 5
