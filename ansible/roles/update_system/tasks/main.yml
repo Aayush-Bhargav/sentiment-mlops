@@ -13,4 +13,6 @@
       - gnupg
       - lsb-release
       - software-properties-common
+      - sudo
+      - rsync
     state: present
