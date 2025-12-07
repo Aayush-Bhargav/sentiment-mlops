@@ -129,7 +129,12 @@ if selected_movie:
 
     # 3. USER INPUT AREA
     st.write("### Submit Your Review")
-    
+
+    # Clear the review box BEFORE the text area is drawn
+    if st.session_state.get("should_clear_review", False):
+        st.session_state.review_text_input = ""
+        st.session_state.should_clear_review = False
+
     user_input = st.text_area("Type your review here:", key="review_text_input", height=150)
     current_review_text = st.session_state.review_text_input
 
@@ -203,7 +208,7 @@ if selected_movie:
                         st.session_state.post_submission_message = msg
                         
                         # Clear the review box
-                        st.session_state.review_text_input = ""
+                        st.session_state.should_clear_review = True
                         st.experimental_rerun() # Rerun to refresh score and clear text area
                 
                     elif "error" in data:
