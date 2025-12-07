@@ -133,23 +133,54 @@ if 'review_text' not in st.session_state:
     st.session_state.review_text = ""
 
 user_input = st.text_area("Type your review here:", key="review_text_input", height=150, value=st.session_state.review_text)
+current_review_text = st.session_state.review_text
+
+# Initialize session state for post-submission message
+if 'post_submission_message' not in st.session_state:
+    st.session_state.post_submission_message = None
+
+# Clear message on movie selection change (if needed)
+if movie_selection != st.session_state.get('last_selected_movie') and st.session_state.post_submission_message:
+    st.session_state.post_submission_message = None
+st.session_state.last_selected_movie = movie_selection
+
+# Display the message outside the button block so it persists during rerun
+if st.session_state.post_submission_message:
+    message_type = st.session_state.post_submission_message['type']
+    message_text = st.session_state.post_submission_message['text']
+    
+    if message_type == 'positive':
+        st.success(message_text)
+    elif message_type == 'negative':
+        st.error(message_text)
 
 # 4. THE "SUBMIT REVIEW" BUTTON
 if st.button("Submit Review"):
+    # Clear any previous message before attempting a new submission
+    st.session_state.post_submission_message = None
+    
+    review_words = current_review_text.strip().split()
+
     if not selected_movie_id:
         st.error("Please select a valid movie first.")
-    elif user_input.strip() == "":
+        
+    # --- New 5-word minimum check ---
+    elif len(review_words) < 5:
+        st.warning("Please ensure your review has at least **5 words**.")
+        
+    elif current_review_text.strip() == "":
+        # This check is now mostly redundant due to the word count check, but good for safety
         st.warning("Please enter some text first.")
+        
     else:
         # 5. CONNECT TO BACKEND (New Submit Endpoint)
         payload = {
             "movie_id": selected_movie_id,
-            "text": user_input
+            "text": current_review_text # Use the variable bound to session state
         }
         
         try:
             with st.spinner("Analyzing and Saving Review..."):
-                # Call the new endpoint that BOTH predicts AND saves to DB
                 response = requests.post(SUBMIT_REVIEW_URL, json=payload)
             
             # 6. DISPLAY RESULTS
@@ -160,18 +191,23 @@ if st.button("Submit Review"):
                     sentiment = data["sentiment"]
                     model_id = data.get("model_version", "Unknown")
                     
-                    # Custom success/error message
+                    # Store the custom success/error message in session state
                     if sentiment.lower() == "positive":
-                        st.success(f"**Thank you for your POSITIVE review!** 🎉")
+                        msg = {
+                            "type": "positive",
+                            "text": f"**Thank you for your POSITIVE review!** 🎉 Prediction served by Model Version: {model_id}"
+                        }
                     else:
-                        st.error(f"**Thank you for your NEGATIVE review.** We appreciate your honesty.")
+                        msg = {
+                            "type": "negative",
+                            "text": f"**Thank you for your NEGATIVE review.** We appreciate your honesty. Prediction served by Model Version: {model_id}"
+                        }
+                    st.session_state.post_submission_message = msg
                     
-                    st.caption(f"Prediction served by Model Version: {model_id}")
-                    
-                    # Clear the review box and re-run the script to update the score
+                    # Clear the review box
                     st.session_state.review_text = ""
                     st.experimental_rerun() # Rerun to refresh score and clear text area
-                
+            
                 elif "error" in data:
                     st.error(f"Backend Error: {data['error']}")
                 else:
