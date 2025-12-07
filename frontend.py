@@ -129,11 +129,8 @@ if selected_movie:
 
     # 3. USER INPUT AREA
     st.write("### Submit Your Review")
-    # Use session state to manage and clear the input box
-    if 'review_text' not in st.session_state:
-        st.session_state.review_text = ""
-
-    user_input = st.text_area("Type your review here:", key="review_text_input", height=150, value=st.session_state.review_text)
+    
+    user_input = st.text_area("Type your review here:", key="review_text_input", height=150)
     current_review_text = st.session_state.review_text_input
 
     # Initialize session state for post-submission message
@@ -206,7 +203,7 @@ if selected_movie:
                         st.session_state.post_submission_message = msg
                         
                         # Clear the review box
-                        st.session_state.review_text = ""
+                        st.session_state.review_text_input = ""
                         st.experimental_rerun() # Rerun to refresh score and clear text area
                 
                     elif "error" in data:
