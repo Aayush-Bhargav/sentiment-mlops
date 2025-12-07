@@ -62,6 +62,12 @@ class MovieData(BaseModel):
     name: str
     description: str
 
+class MovieReviewData(BaseModel):
+    """Schema for /reviews/{movie_id} endpoint response."""
+    review_id: int
+    movie_id: str
+    review: str
+
 class ReviewInput(BaseModel):
     """Schema for the new /submit_review endpoint."""
     movie_id: int
@@ -267,8 +273,7 @@ def submit_and_predict_review(review_input: ReviewInput, db: Session = Depends(g
         "message": "Review submitted and analyzed successfully."
     }
 
-@app.get("/reviews/{movie_{id}", response_model=List[MovieReview])
+@app.get("/reviews/{movie_{id}", response_model=List[MovieReviewData])
 def get_reviews(movie_id: int, db: Session = Depends(get_db)):
     recent_reviews = db.reviews.find({"movie_id": movie_id}).sort("review_id", -1).limit(3)
-    
-    return recent_reviews
+    return [{"review_id": r.review_id, "movie_id": r.movie_id, "review": r.review} for r in recent_reviews]

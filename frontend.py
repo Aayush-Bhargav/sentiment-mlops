@@ -146,7 +146,7 @@ if selected_movie:
     if recent_reviews:
         for i, review in enumerate(recent_reviews):
             # Display each review in a clean format
-            st.markdown(f"> **Review {i+1}:** {review['text']}")
+            st.markdown(f"> **Review {i+1}:** {review['review']}")
             # You might need to format the timestamp from the backend
             if i < len(recent_reviews) - 1:
                 st.markdown("---") # Separator between reviews
