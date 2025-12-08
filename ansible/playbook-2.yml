@@ -46,7 +46,7 @@
         pip install -r requirements.txt
         
         # DVC & Training
-        dvc remote add -d -f mylocal /tmp/dvc_store
+        dvc remote add -d -f mylocal .dvc/cache 
         dvc pull
         
         # Handle MLflow history link (Ensure this block is indented consistently)
