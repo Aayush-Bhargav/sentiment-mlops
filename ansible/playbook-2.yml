@@ -67,10 +67,8 @@
         dvc pull
         
         # Handle MLflow history link (Ensure path is consistent)
-        ln -s /home/{{ ansible_user }}/mlflow_history mlruns
+        ln -sf /home/{{ ansible_user }}/mlflow_history mlruns
         python3 train.py
-        rm mlruns
-        cp -r /home/{{ ansible_user }}/mlflow_history mlruns
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
       become: yes
