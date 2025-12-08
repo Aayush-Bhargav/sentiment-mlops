@@ -3,7 +3,6 @@
   hosts: server
   gather_facts: yes
   
-  # This section calls the roles defined below
   roles:
     - update_system
     - install_docker
