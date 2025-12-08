@@ -93,14 +93,16 @@
     #     docker logout
     #   become: yes
 
-    - name: Ensure Kubeconfig skips TLS verification (Fix for Minikube CA)
-      ansible.builtin.replace:
+    - name: Ensure Kubeconfig skips TLS verification using lineinfile
+      ansible.builtin.lineinfile:
         path: "{{ kubeconfig_path }}" # /var/lib/jenkins/kubeconfig
-        regexp: '(\s+server:\s+https:\/\/.+)$' 
-        replace: '\1\n      insecure-skip-tls-verify: true' 
-        backup: yes 
+        insertafter: '^(\s+server:.*)$' # Find the line that starts with spaces, followed by 'server:'
+        line: '    insecure-skip-tls-verify: true' # Use 4 spaces for typical kubeconfig indentation
+        regexp: '^(\s+)insecure-skip-tls-verify:' # Ensure we don't add the line twice
+        state: present
+        backup: yes
       become: yes
-        
+      
     - name: 4. UPDATE KUBERNETES DEPLOYMENT
       ansible.builtin.shell: |
         set -e
