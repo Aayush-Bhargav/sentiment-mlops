@@ -25,20 +25,6 @@ pipeline {
             }
         }
 
-        stage('Prepare Local Data') {
-            steps {
-                echo 'Configuring DVC to use shared Jenkins storage...'
-                sh """
-                # 1. Remove the old remote (which points to your home directory)
-                dvc remote remove mylocal || true
-                
-                # 2. Add the new remote that points to the shared, accessible folder.
-                # DVC will now pull data from this location during training.
-                dvc remote add -d -f jenkins_local_archive /var/jenkins_dvc_storage
-                """
-            }
-        }
-
         stage('Configure Remote Host') {
             steps {
                 echo 'Running Configuration Management playbook (install Docker/K8s tools)...'
