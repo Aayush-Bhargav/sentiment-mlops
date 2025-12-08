@@ -9,7 +9,7 @@
     docker_tag: "{{ lookup('env', 'DOCKER_TAG') }}"
     dockerhub_user: "{{ lookup('env', 'DOCKER_USR') }}"
     dockerhub_pass: "{{ lookup('env', 'DOCKER_PSW') }}"
-    kubeconfig_path: "/.kube/config" 
+    kubeconfig_path: "/home/iiitb/.kube/config" 
 
   tasks:
     - name: Ensure project directory exists
