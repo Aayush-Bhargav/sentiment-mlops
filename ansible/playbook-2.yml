@@ -46,6 +46,7 @@
         pip install -r requirements.txt
         
         # DVC & Training
+        dvc remote remove mylocal || true
         dvc remote add -d -f mylocal .dvc/cache 
         dvc pull
         
