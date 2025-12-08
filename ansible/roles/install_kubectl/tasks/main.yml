@@ -29,27 +29,26 @@
 
 - name: Check Minikube status
   become: false
-  ansible.builtin.command: minikube status --format='{{ "{{.Host}}" }}'
+  ansible.builtin.command: >
+    minikube status --format='{{ "{{.Host}} {{.Kubelet}} {{.APIServer}}" }}'
   register: minikube_status
   failed_when: false
   changed_when: false
 
-# - name: Start Minikube if not running
-#   become: false
-#   ansible.builtin.shell: |
-#     minikube start --driver=docker --delete-on-failure --wait=all --alsologtostderr --interactive=false
-#     minikube update-context
-#   register: minikube_start
-#   failed_when: 
-#     - minikube_start.rc != 0 
-#     - "'Exiting' in minikube_start.stderr"
-#     - "'error' in minikube_start.stderr.lower()"
-    
-#   changed_when: true
-#   when: minikube_status.stdout.find("Running") == -1
-#   args:
-#     chdir: "{{ ansible_env.HOME }}"
-#     executable: /bin/bash
+- name: Start Minikube if not fully running
+  become: false
+  ansible.builtin.shell: |
+    minikube delete --all --purge || true
+    minikube start --driver=docker --wait=all --alsologtostderr --interactive=false
+    minikube update-context
+  register: minikube_start
+  failed_when:
+    - minikube_start.rc != 0
+    - "'Exiting' in minikube_start.stderr"
+    - "'error' in minikube_start.stderr.lower()"
+  changed_when: true
+  when: >
+    ('Running Running Running' not in minikube_status.stdout)
 
 - name: Display Minikube final status
   become: false
