@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        // Your existing credential ID
+        // Existing credential ID
         
         DOCKERHUB_CREDENTIALS = credentials('dockerhub_credentials')
         
-        // YOUR Docker Hub Username
+        // Docker Hub Username
         DOCKERHUB_USER = "praveenpeterjay2" 
         
         // Image Names

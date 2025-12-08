@@ -6,4 +6,4 @@
   roles:
     - update_system
     - install_docker
-    - install_kubectl
+    - install_minikube

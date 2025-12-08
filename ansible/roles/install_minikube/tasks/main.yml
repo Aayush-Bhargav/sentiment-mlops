@@ -42,7 +42,7 @@
   failed_when: false
   changed_when: false
 
-- name: Start Minikube if not running (run as ansible_user)
+- name: Start Minikube if not running
   become: yes
   become_user: "{{ minikube_user }}"
   ansible.builtin.shell: |
