@@ -145,11 +145,18 @@ if selected_movie:
 
     if recent_reviews:
         for i, review in enumerate(recent_reviews):
-            # Display each review in a clean format
-            st.markdown(f"> **Review {i+1}:** {review['review']}")
-            # You might need to format the timestamp from the backend
+            # Determine color based on isPos boolean
+            color = "green" if review.get("isPos") else "red"
+
+            # Render colored quote-style review
+            st.markdown(
+                f"> <span style='color:{color}; font-weight:500;'>{review['review']}</span>",
+                unsafe_allow_html=True
+            )
+
             if i < len(recent_reviews) - 1:
-                st.markdown("---") # Separator between reviews
+                st.markdown("---")
+
     else:
         st.info("Be the first to review this movie!")
 

@@ -67,6 +67,7 @@ class MovieReviewData(BaseModel):
     review_id: int
     movie_id: int
     review: str
+    isPos: Boolean
 
 class ReviewInput(BaseModel):
     """Schema for the new /submit_review endpoint."""
@@ -283,6 +284,6 @@ def get_reviews(movie_id: int, db: Session = Depends(get_db)):
           .all()
     )
     return [
-        {"review_id": r.review_id, "movie_id": r.movie_id, "review": r.review}
+        {"review_id": r.review_id, "movie_id": r.movie_id, "review": r.review, "isPos": r.isPos}
         for r in recent_reviews
     ]
