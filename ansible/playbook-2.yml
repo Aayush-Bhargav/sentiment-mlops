@@ -12,7 +12,6 @@
     kubeconfig_path: "/var/lib/jenkins/kubeconfig" # Assumes kubeconfig is copied to the host
 
   tasks:
-    tasks:
     - name: Ensure project directory exists
       ansible.builtin.file:
         path: /home/{{ ansible_user }}/project_workspace
