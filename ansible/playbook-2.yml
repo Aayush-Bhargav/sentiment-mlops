@@ -65,8 +65,15 @@
         pip install -r requirements.txt
         
         # DVC & Training
+        # 1. Clear the remote that pointed to the bad path (/tmp/dvc_store)
         dvc remote remove mylocal || true
-        dvc remote add -d -f mylocal /home/{{ ansible_user }}/dvc_repo_cache
+        
+        # 2. Re-create the 'mylocal' remote, pointing it to the correct, shared Jenkins storage path.
+        # This path is where you ran 'sudo -u jenkins dvc push' to.
+        # 💡 IMPORTANT: USE THE SHARED PATH, NOT THE TEMPORARY REPO COPY
+        dvc remote add -d -f mylocal /var/jenkins_dvc_storage
+        
+        # 3. Pull the data. (DVC now knows where to look for the data archive)
         dvc pull
         
         # Handle MLflow history link (Ensure this block is indented consistently)

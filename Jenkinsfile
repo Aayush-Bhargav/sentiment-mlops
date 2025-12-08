@@ -27,18 +27,14 @@ pipeline {
 
         stage('Prepare Local Data') {
             steps {
-                echo 'Injecting local DVC cache into Jenkins workspace...'
-                // CRITICAL: We copy the cache from your actual project folder 
-                // into the temporary Jenkins workspace.
+                echo 'Configuring DVC to use shared Jenkins storage...'
                 sh """
-                # Define your permanent local project directory path
-                LOCAL_CACHE_SOURCE="/home/iiitb/SPE/SPE_Project/sentiment-mlops/.dvc/cache"
+                # 1. Remove the old remote (which points to your home directory)
+                dvc remote remove mylocal || true
                 
-                # Copy contents into the current Jenkins workspace (.dvc/cache)
-                cp -r \$LOCAL_CACHE_SOURCE ${WORKSPACE}/.dvc/
-                
-                # Ensure the permissions are correct for the copy
-                chmod -R 777 ${WORKSPACE}/.dvc/cache
+                # 2. Add the new remote that points to the shared, accessible folder.
+                # DVC will now pull data from this location during training.
+                dvc remote add -d -f jenkins_local_archive /var/jenkins_dvc_storage
                 """
             }
         }
