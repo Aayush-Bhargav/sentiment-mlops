@@ -2,10 +2,10 @@ pipeline {
     agent any
 
     environment {
-        // Your existing credential ID
+        // Existing credential ID
         
         DOCKERHUB_CREDENTIALS = credentials('dockerhub_credentials')
-        
+    
         // YOUR Docker Hub Username
         DOCKERHUB_USER = "aayushbhargav57" 
         
@@ -25,23 +25,55 @@ pipeline {
             }
         }
 
-        // stage('Configure Remote Host') {
-        //     steps {
-        //         echo 'Running Configuration Management playbook (install Docker/K8s tools)...'
-                
-        //         sh "ansible-playbook -i ansible/inventory.ini ansible/playbook-1.yml"
+//         stage('Configure Remote Host') {
+//             steps {
+//                 echo 'Running Configuration Management playbook (install Docker/K8s tools)...'
 
-        //         echo 'Remote host configured and ready for deployment.'
-        //     }
-        // }
-        
-        // stage('Build, Train, & Deploy (Remote)') {
-        //     steps {
-        //         echo 'Executing full CI/CD pipeline on the configured Ansible Host...'
-                
-        //         sh "ansible-playbook -i ansible/inventory.ini ansible/playbook-2.yml --extra-vars 'workspace=${WORKSPACE}'"
-        //     }
-        // }
+//                 withCredentials([
+//                     string(credentialsId: 'sudo_pass_vault_credentials', variable: 'ANSIBLE_VAULT_PASSWORD')
+//                 ]) {
+//                     sh '''
+//                         # Write vault password WITHOUT Groovy interpolation
+//                         printf "%s" "$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
+
+//                         ansible-playbook \
+//                             -i ansible/inventory.ini \
+//                             ansible/playbook-1.yml \
+//                             --vault-password-file vault-pass.txt \
+//                             --extra-vars workspace="$WORKSPACE"
+
+//                         rm -f vault-pass.txt
+//                     '''
+//                 }
+//             }
+//         }
+
+//         stage('Build, Train, & Deploy (Remote)') {
+//             steps {
+//                 echo 'Executing full CI/CD pipeline on Ansible host...'
+
+//                 withCredentials([
+//                     usernamePassword(credentialsId: 'dockerhub_credentials',
+//                                     usernameVariable: 'DOCKER_USR',
+//                                     passwordVariable: 'DOCKER_PSW'),
+//                     string(credentialsId: 'sudo_pass_vault_credentials', variable: 'ANSIBLE_VAULT_PASSWORD')
+//                 ]) {
+//                     sh '''
+//                         printf "%s" "$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
+
+//                         ansible-playbook \
+//                             -i ansible/inventory.ini \
+//                             ansible/playbook-2.yml \
+//                             --vault-password-file vault-pass.txt \
+//                             --extra-vars workspace="$WORKSPACE" \
+//                             --extra-vars docker_username="$DOCKER_USR" \
+//                             --extra-vars docker_password="$DOCKER_PSW"
+
+//                         rm -f vault-pass.txt
+//                     '''
+//                 }
+//             }
+//         }
 
         stage('Train Model (CI)') {
             steps {
