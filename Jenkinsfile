@@ -38,8 +38,11 @@ pipeline {
         stage('Build, Train, & Deploy (Remote)') {
             steps {
                 echo 'Executing full CI/CD pipeline on the configured Ansible Host...'
-                
-                sh "ansible-playbook -i ansible/inventory.ini ansible/playbook-2.yml --extra-vars 'workspace=${WORKSPACE}'"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', 
+                                                    usernameVariable: 'DOCKER_USR', 
+                                                    passwordVariable: 'DOCKER_PSW')]) {
+                    sh "ansible-playbook -i ansible/inventory.ini ansible/playbook-2.yml --extra-vars 'workspace=${WORKSPACE}'"
+                }
             }
         }
 
