@@ -30,7 +30,7 @@ pipeline {
         stage('Configure Remote Host') {
             steps {
                 echo 'Running Configuration Management playbook (install Docker/K8s tools)...'
-                sh """
+                sh '''
                     echo "\$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
 
                     ansible-playbook -i ansible/inventory.ini ansible/playbook-1.yml \
@@ -38,7 +38,7 @@ pipeline {
                         --extra-vars 'workspace=${WORKSPACE}'
 
                     rm vault-pass.txt
-                """
+                '''
             }
         }
 
@@ -48,7 +48,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', 
                                                 usernameVariable: 'DOCKER_USR', 
                                                 passwordVariable: 'DOCKER_PSW')]) {
-                    sh """
+                    sh '''
                         echo "\$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
 
                         ansible-playbook -i ansible/inventory.ini ansible/playbook-2.yml \
@@ -56,7 +56,7 @@ pipeline {
                         --extra-vars 'workspace=${WORKSPACE} DOCKER_USR=${DOCKER_USR} DOCKER_PSW=${DOCKER_PSW}'
 
                         rm vault-pass.txt
-                    """
+                    '''
                 }
             }
         }
