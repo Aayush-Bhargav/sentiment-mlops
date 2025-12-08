@@ -63,7 +63,7 @@
 
         # DVC: Uses the shared, permanent archive
         dvc remote remove mylocal || true # Clean up old reference
-        dvc remote add -d -f jenkins_local_archive /var/jenkins_dvc_storage
+        dvc remote add -d -f mylocal /tmp/dvc_store
         dvc pull
         
         # Handle MLflow history link (Ensure path is consistent)
@@ -73,7 +73,7 @@
         cp -r /home/{{ ansible_user }}/mlflow_history mlruns
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
-        timeout: 1800 # 30-minute timeout for training
+      become: yes
 
     # (Tasks 2, 3, and 4 are fine)
 
