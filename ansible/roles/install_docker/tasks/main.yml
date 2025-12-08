@@ -1,26 +1,24 @@
 ---
-- name: "Add Docker GPG key"
-  ansible.builtin.apt_key:
-    url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
-    
-- name: "Add Docker repository"
-  ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
-    state: present
-    
-- name: "Install Docker engine and dependencies"
-  ansible.builtin.apt:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-    state: present
-    update_cache: yes
-    
-- name: "Ensure Docker service is running and enabled"
-  ansible.builtin.service:
-    name: docker
-    state: started
-    enabled: yes
-    use: service
+- name: "Docker Setup"
+  hosts: server
+  gather_facts: yes
+  become: yes
+
+  tasks:
+    - name: Install Docker
+      ansible.builtin.apt:
+        pkg:
+          - docker.io
+        state: present
+
+    - name: Ensure Docker service is running
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add current user to docker group
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
