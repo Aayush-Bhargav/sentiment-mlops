@@ -20,11 +20,12 @@
     path: /usr/local/bin/minikube
   register: minikube_bin
 
-- name: Download Minikube binary
+- name: Download Minikube binary if missing
   ansible.builtin.get_url:
     url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
     dest: /usr/local/bin/minikube
     mode: '0755'
+  when: not minikube_bin.stat.exists
 
 - name: Check Minikube status
   become: false
@@ -33,14 +34,15 @@
   failed_when: false
   changed_when: false
 
-- name: Start Minikube with Docker driver as iiitb
+- name: Start Minikube if not running
   become: false
   ansible.builtin.shell: |
-    minikube delete --all --purge || true
-    minikube start --driver=docker
+    minikube start --driver=docker --delete-on-failure
     minikube update-context
   register: minikube_start
-  failed_when: "'Exiting' in minikube_start.stdout or 'Exiting' in minikube_start.stderr"
+  failed_when: "'Exiting' in minikube_start.stdout or 'Exiting' in minikube_start.stderr or 'error' in minikube_start.stderr.lower()"
+  changed_when: true
+  when: minikube_status.stdout != "Running"
 
 - name: Display Minikube final status
   become: false
@@ -51,4 +53,3 @@
 - name: Output Minikube status
   ansible.builtin.debug:
     msg: "{{ minikube_final.stdout }}"
-
