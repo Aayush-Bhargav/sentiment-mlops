@@ -103,4 +103,4 @@
         kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-frontend.yaml
         kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/backend-deployment
         kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/frontend-deployment
-      become_user: "{{ ansible_user }}"
+      become: yes

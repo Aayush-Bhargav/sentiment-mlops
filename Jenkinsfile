@@ -29,7 +29,14 @@ pipeline {
             steps {
                 echo 'Running Configuration Management playbook (install Docker/K8s tools)...'
                 
-                sh "ansible-playbook -i ansible/inventory.ini ansible/playbook-1.yml"
+                withCredentials([string(credentialsId: 'ansible-vault-sudo-pass', 
+                    variable: 'VAULT_SECRET')]) {
+                            sh """
+                            ANSIBLE_VAULT_PASSWORD="${VAULT_SECRET}" \\
+                            ansible-playbook -i ansible/inventory.ini ansible/playbook-1.yml \\
+                            --extra-vars 'workspace=${WORKSPACE}'
+                            """
+                    }  
 
                 echo 'Remote host configured and ready for deployment.'
             }
@@ -39,9 +46,15 @@ pipeline {
             steps {
                 echo 'Executing full CI/CD pipeline on the configured Ansible Host...'
                 withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', 
-                                                    usernameVariable: 'DOCKER_USR', 
-                                                    passwordVariable: 'DOCKER_PSW')]) {
-                    sh "ansible-playbook -i ansible/inventory.ini ansible/playbook-2.yml --extra-vars 'workspace=${WORKSPACE}'"
+                    usernameVariable: 'DOCKER_USR', passwordVariable: 'DOCKER_PSW')]) {
+                withCredentials([string(credentialsId: 'sudo_pwd_vault_credentials', 
+                    variable: 'VAULT_SECRET')]) {
+                            sh """
+                            ANSIBLE_VAULT_PASSWORD="${VAULT_SECRET}" \\
+                            ansible-playbook -i ansible/inventory.ini ansible/playbook-2.yml \\
+                            --extra-vars 'workspace=${WORKSPACE}'
+                            """
+                    }         
                 }
             }
         }
