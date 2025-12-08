@@ -37,18 +37,11 @@
 - name: Start Minikube if not running
   become: false
   ansible.builtin.shell: |
-    # 💡 Remove timeout from args, but set the shell command timeout here instead
-    # This ensures the shell itself doesn't hang indefinitely.
-    # We will use the 'export TMOUT' method for robustness if the task hangs.
-    # --- (Ensure the newgrp fix is applied in the docker role) ---
-    
-    # 💡 FIX: Explicitly setting non-interactive flags
     minikube start --driver=docker --delete-on-failure --wait=all --alsologtostderr --interactive=false
     minikube update-context
   register: minikube_start
   failed_when: 
     - minikube_start.rc != 0 
-    # Optional but recommended checks if rc is not sufficient:
     - "'Exiting' in minikube_start.stderr"
     - "'error' in minikube_start.stderr.lower()"
     
