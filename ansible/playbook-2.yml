@@ -100,8 +100,6 @@
         replace: '\1\n      insecure-skip-tls-verify: true' 
         backup: yes 
       become: yes
-      args:
-        chdir: /home/{{ ansible_user }}/project_workspace
         
     - name: 4. UPDATE KUBERNETES DEPLOYMENT
       ansible.builtin.shell: |
