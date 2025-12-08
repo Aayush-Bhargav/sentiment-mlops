@@ -2,7 +2,7 @@
 - name: Update all packages
   ansible.builtin.apt:
     update_cache: yes
-    upgrade: dist
+    upgrade: no
 
 - name: Install system dependencies
   ansible.builtin.apt:
