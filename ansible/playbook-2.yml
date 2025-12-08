@@ -10,6 +10,9 @@
     dockerhub_user: "{{ lookup('env', 'DOCKER_USR') }}"
     dockerhub_pass: "{{ lookup('env', 'DOCKER_PSW') }}"
     kubeconfig_path: "{{ ansible_user_dir }}/.kube/config"
+  
+  vars_files:
+    - sudo_pwd_vault.yml
 
   tasks:
     - name: Ensure project directory exists

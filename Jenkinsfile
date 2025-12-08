@@ -5,6 +5,8 @@ pipeline {
         // Existing credential ID
         
         DOCKERHUB_CREDENTIALS = credentials('dockerhub_credentials')
+
+        ANSIBLE_VAULT_PASSWORD = credentials('sudo_pwd_vault_credentials')
         
         // Docker Hub Username
         DOCKERHUB_USER = "praveenpeterjay2" 
@@ -28,33 +30,26 @@ pipeline {
         stage('Configure Remote Host') {
             steps {
                 echo 'Running Configuration Management playbook (install Docker/K8s tools)...'
-                
-                withCredentials([string(credentialsId: 'sudo_pwd_vault_credentials', 
-                    variable: 'VAULT_SECRET')]) {
-                            sh """
-                            ANSIBLE_VAULT_PASSWORD="${VAULT_SECRET}" \\
-                            ansible-playbook -i ansible/inventory.ini ansible/playbook-1.yml \\
-                            --extra-vars 'workspace=${WORKSPACE}'
-                            """
-                    }  
-
+                sh """
+                    ansible-playbook -i ansible/inventory.ini ansible/playbook-1.yml \\
+                    --vault-password-file=<(echo \$ANSIBLE_VAULT_PASSWORD) \\
+                    --extra-vars 'workspace=${WORKSPACE}'
+                """
                 echo 'Remote host configured and ready for deployment.'
             }
         }
-        
+
         stage('Build, Train, & Deploy (Remote)') {
             steps {
                 echo 'Executing full CI/CD pipeline on the configured Ansible Host...'
                 withCredentials([usernamePassword(credentialsId: 'dockerhub_credentials', 
-                    usernameVariable: 'DOCKER_USR', passwordVariable: 'DOCKER_PSW')]) {
-                withCredentials([string(credentialsId: 'sudo_pwd_vault_credentials', 
-                    variable: 'VAULT_SECRET')]) {
-                            sh """
-                            ANSIBLE_VAULT_PASSWORD="${VAULT_SECRET}" \\
-                            ansible-playbook -i ansible/inventory.ini ansible/playbook-2.yml \\
-                            --extra-vars 'workspace=${WORKSPACE}'
-                            """
-                    }         
+                                                usernameVariable: 'DOCKER_USR', 
+                                                passwordVariable: 'DOCKER_PSW')]) {
+                    sh """
+                        ansible-playbook -i ansible/inventory.ini ansible/playbook-2.yml \\
+                        --vault-password-file=<(echo \$ANSIBLE_VAULT_PASSWORD) \\
+                        --extra-vars 'workspace=${WORKSPACE} DOCKER_USR=${DOCKER_USR} DOCKER_PSW=${DOCKER_PSW}'
+                    """
                 }
             }
         }
