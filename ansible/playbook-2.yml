@@ -116,6 +116,7 @@
         kubectl --kubeconfig={{ kubeconfig_path }} rollout status deployment/kibana --timeout=300s
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
+      become: yes
 
     - name: 6. CONFIGURE KIBANA 
       ansible.builtin.uri:
