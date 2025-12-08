@@ -102,16 +102,16 @@ pipeline {
         stage('Update Kubernetes') {
             steps {
                 echo 'Applying new K8s Config...'
-                
-                # 1. Apply Infrastructure (DB + Logging)
+
+                // 1. Apply Infrastructure (DB + Logging)
                 sh "kubectl --kubeconfig=/var/lib/jenkins/kubeconfig apply -f k8s-database.yaml"
-                sh "kubectl --kubeconfig=/var/lib/jenkins/kubeconfig apply -f k8s-logging.yaml" # <--- NEW LINE
+                sh "kubectl --kubeconfig=/var/lib/jenkins/kubeconfig apply -f k8s-logging.yaml"
                 
-                # 2. Apply Apps
+                // 2. Apply Apps
                 sh "kubectl --kubeconfig=/var/lib/jenkins/kubeconfig apply -f k8s-backend.yaml"
                 sh "kubectl --kubeconfig=/var/lib/jenkins/kubeconfig apply -f k8s-frontend.yaml"
 
-                # 3. Restart
+                // 3. Restart to pick up new images
                 sh "kubectl --kubeconfig=/var/lib/jenkins/kubeconfig rollout restart deployment/backend-deployment"
                 sh "kubectl --kubeconfig=/var/lib/jenkins/kubeconfig rollout restart deployment/frontend-deployment"
             }
