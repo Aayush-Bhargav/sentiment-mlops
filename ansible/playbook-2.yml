@@ -93,27 +93,40 @@
     #     docker logout
     #   become: yes
 
+    - name: Remove certificate-authority from kubeconfig (if present)
+      ansible.builtin.lineinfile:
+        path: "{{ kubeconfig_path }}"
+        regexp: '^\s*certificate-authority:\s*.*$'
+        state: absent
+        backup: yes
+        become: yes
+
+    - name: Remove certificate-authority-data from kubeconfig (handles Minikube base64)
+      ansible.builtin.lineinfile:
+        path: "{{ kubeconfig_path }}"
+        regexp: '^\s*certificate-authority-data:\s*.*$'
+        state: absent
+        backup: yes
+        become: yes
+
     - name: Ensure Kubeconfig skips TLS verification using lineinfile
       ansible.builtin.lineinfile:
-        path: "{{ kubeconfig_path }}" # /var/lib/jenkins/kubeconfig
-        insertafter: '^(\s+server:.*)$' # Find the line that starts with spaces, followed by 'server:'
-        line: '    insecure-skip-tls-verify: true' # Use 4 spaces for typical kubeconfig indentation
-        regexp: '^(\s+)insecure-skip-tls-verify:' # Ensure we don't add the line twice
+        path: "{{ kubeconfig_path }}"
+        insertafter: '^(\s+server:.*)$'
+        line: ' insecure-skip-tls-verify: true'
+        regexp: '^(\s+)insecure-skip-tls-verify:'
         state: present
         backup: yes
-      become: yes
-      
+        become: yes
+
+    # Your existing shell task for deployments remains the same
     - name: 4. UPDATE KUBERNETES DEPLOYMENT
       ansible.builtin.shell: |
         set -e
         cd /home/{{ ansible_user }}/project_workspace
-        
-        # Apply YAMLs (No need for --validate=false anymore, but harmless)
         kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-backend.yaml
         kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-database.yaml
         kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-frontend.yaml
-        
-        # Restart Deployments
         kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/backend-deployment
         kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/frontend-deployment
       args:
