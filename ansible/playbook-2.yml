@@ -52,6 +52,17 @@
           - "--exclude=.dvc/cache" 
       become: yes
 
+    - name: Get Minikube IP
+      ansible.builtin.command: minikube ip
+      register: minikube_ip_cmd
+
+    - name: Add Minikube hostnames to /etc/hosts
+      become: yes
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ minikube_ip_cmd.stdout }} rottenpotatoes.com kibana.com"
+        state: present
+
     - name: 1. TRAIN MODEL (CI)
       ansible.builtin.shell: |
         echo "Starting MLOps training steps..."
@@ -86,15 +97,15 @@
         chdir: /home/{{ ansible_user }}/project_workspace
       become: yes
 
-    - name: 3. PUSH TO DOCKER HUB
-      ansible.builtin.shell: |
-        set -e
-        cd /home/{{ ansible_user }}/project_workspace
-        echo "{{ dockerhub_pass }}" | docker login -u "{{ dockerhub_user }}" --password-stdin
-        docker push {{ backend_image }}:{{ docker_tag }}
-        docker push {{ frontend_image }}:{{ docker_tag }}
-        docker logout
-      become: yes
+    # - name: 3. PUSH TO DOCKER HUB
+    #   ansible.builtin.shell: |
+    #     set -e
+    #     cd /home/{{ ansible_user }}/project_workspace
+    #     echo "{{ dockerhub_pass }}" | docker login -u "{{ dockerhub_user }}" --password-stdin
+    #     docker push {{ backend_image }}:{{ docker_tag }}
+    #     docker push {{ frontend_image }}:{{ docker_tag }}
+    #     docker logout
+    #   become: yes
 
     - name: 4. UPDATE KUBERNETES DEPLOYMENT
       ansible.builtin.shell: |
