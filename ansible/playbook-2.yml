@@ -9,7 +9,7 @@
     docker_tag: "{{ lookup('env', 'DOCKER_TAG') }}"
     dockerhub_user: "{{ lookup('env', 'DOCKER_USR') }}"
     dockerhub_pass: "{{ lookup('env', 'DOCKER_PSW') }}"
-    kubeconfig_path: "/var/lib/jenkins/kubeconfig" # Assumes kubeconfig is copied to the host
+    kubeconfig_path: "/.kube/config" 
 
   tasks:
     - name: Ensure project directory exists
@@ -93,32 +93,6 @@
     #     docker logout
     #   become: yes
 
-    - name: Remove certificate-authority from kubeconfig (if present)
-      ansible.builtin.lineinfile:
-        path: "{{ kubeconfig_path }}"
-        regexp: '^\s*certificate-authority:\s*.*$'
-        state: absent
-        backup: yes
-        become: yes
-
-    - name: Remove certificate-authority-data from kubeconfig (handles Minikube base64)
-      ansible.builtin.lineinfile:
-        path: "{{ kubeconfig_path }}"
-        regexp: '^\s*certificate-authority-data:\s*.*$'
-        state: absent
-        backup: yes
-        become: yes
-
-    - name: Ensure Kubeconfig skips TLS verification using lineinfile
-      ansible.builtin.lineinfile:
-        path: "{{ kubeconfig_path }}"
-        insertafter: '^(\s+server:.*)$'
-        line: ' insecure-skip-tls-verify: true'
-        regexp: '^(\s+)insecure-skip-tls-verify:'
-        state: present
-        backup: yes
-        become: yes
-
     # Your existing shell task for deployments remains the same
     - name: 4. UPDATE KUBERNETES DEPLOYMENT
       ansible.builtin.shell: |
@@ -129,6 +103,4 @@
         kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-frontend.yaml
         kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/backend-deployment
         kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/frontend-deployment
-      args:
-        chdir: /home/{{ ansible_user }}/project_workspace
       become: yes
