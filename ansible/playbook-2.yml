@@ -93,17 +93,27 @@
     #     docker logout
     #   become: yes
 
+    - name: Ensure Kubeconfig skips TLS verification (Fix for Minikube CA)
+      ansible.builtin.replace:
+        path: "{{ kubeconfig_path }}" # /var/lib/jenkins/kubeconfig
+        regexp: '(\s+server:\s+https:\/\/.+)$' 
+        replace: '\1\n      insecure-skip-tls-verify: true' 
+        backup: yes 
+      become: yes
+      args:
+        chdir: /home/{{ ansible_user }}/project_workspace
+        
     - name: 4. UPDATE KUBERNETES DEPLOYMENT
       ansible.builtin.shell: |
         set -e
         cd /home/{{ ansible_user }}/project_workspace
         
-        # Apply YAMLs (Adding --validate=false)
-        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-backend.yaml --validate=false
-        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-database.yaml --validate=false
-        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-frontend.yaml --validate=false
+        # Apply YAMLs (No need for --validate=false anymore, but harmless)
+        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-backend.yaml
+        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-database.yaml
+        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-frontend.yaml
         
-        # Restart Deployments (These do not need the flag)
+        # Restart Deployments
         kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/backend-deployment
         kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/frontend-deployment
       args:
