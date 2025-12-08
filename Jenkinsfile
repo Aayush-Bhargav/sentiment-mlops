@@ -25,6 +25,24 @@ pipeline {
             }
         }
 
+        stage('Prepare Local Data') {
+            steps {
+                echo 'Injecting local DVC cache into Jenkins workspace...'
+                // CRITICAL: We copy the cache from your actual project folder 
+                // into the temporary Jenkins workspace.
+                sh """
+                # Define your permanent local project directory path
+                LOCAL_CACHE_SOURCE="/home/iiitb/SPE/SPE_Project/sentiment-mlops/.dvc/cache"
+                
+                # Copy contents into the current Jenkins workspace (.dvc/cache)
+                cp -r \$LOCAL_CACHE_SOURCE ${WORKSPACE}/.dvc/
+                
+                # Ensure the permissions are correct for the copy
+                chmod -R 777 ${WORKSPACE}/.dvc/cache
+                """
+            }
+        }
+
         stage('Configure Remote Host') {
             steps {
                 echo 'Running Configuration Management playbook (install Docker/K8s tools)...'
