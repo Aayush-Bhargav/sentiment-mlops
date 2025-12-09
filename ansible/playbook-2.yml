@@ -24,6 +24,7 @@
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}" 
         mode: '0755'
+      become: yes
 
     - name: Ensure MLflow history directory exists and is owned by user
       ansible.builtin.file:
@@ -32,6 +33,7 @@
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
         mode: '0755'
+      become: yes
       
     - name: Copy MLflow history to remote host
       ansible.builtin.synchronize:
@@ -39,6 +41,7 @@
         dest: "/home/{{ ansible_user }}/mlflow_history/"
         mode: push
         archive: yes
+      become: yes
 
     - name: Copy Code, Config, and DVC Pointers
       ansible.builtin.synchronize:
@@ -49,6 +52,7 @@
       args:
         rsync_opts:
           - "--exclude=.dvc/cache" 
+      become: yes
 
     # Kubernetes pre-requisites
     - name: Get Minikube IP
@@ -62,6 +66,7 @@
         path: /etc/hosts
         line: "{{ minikube_ip_cmd.stdout }} rottenpotatoes.com kibana.com"
         state: present
+      become: yes
 
     - name: Create rottenpotatoes namespace
       ansible.builtin.shell: |
@@ -77,16 +82,19 @@
           --dry-run=client -o yaml | kubectl --kubeconfig={{ kubeconfig_path }} apply -f - -n {{ k8s_namespace }}
       args:
         chdir: "/home/{{ ansible_user }}/project_workspace/kubernetes"
+      become: yes
 
     - name: Render backend.yaml
       ansible.builtin.template:
         src: kubernetes/backend.yaml.j2
         dest: /home/{{ ansible_user }}/project_workspace/kubernetes/k8s-backend.yaml
+      become: yes
 
     - name: Render frontend.yaml
       ansible.builtin.template:
         src: kubernetes/frontend.yaml.j2
         dest: /home/{{ ansible_user }}/project_workspace/kubernetes/k8s-frontend.yaml
+      become: yes
 
     # Main sequence of tasks
     - name: 1. TRAIN MODEL 
@@ -111,6 +119,7 @@
         python3 train.py
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
+      become: yes
 
     - name: 2. BUILD DOCKER IMAGES
       ansible.builtin.shell: |
@@ -120,6 +129,7 @@
         docker build -f Dockerfile.frontend -t {{ frontend_image }}:{{ docker_tag }} .
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
+      become: yes
 
     - name: 3. PUSH TO DOCKER HUB
       ansible.builtin.shell: |
@@ -129,6 +139,7 @@
         docker push {{ backend_image }}:{{ docker_tag }}
         docker push {{ frontend_image }}:{{ docker_tag }}
         docker logout
+      become: yes
 
     - name: 4. UPDATE KUBERNETES DEPLOYMENT
       ansible.builtin.shell: |
@@ -145,12 +156,14 @@
 
         kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/backend-deployment -n {{ k8s_namespace }}
         kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/frontend-deployment -n {{ k8s_namespace }}
+      become: yes
 
     - name: 5. DEPLOY LOGGING INFRASTRUCTURE
       ansible.builtin.shell: |
         kubectl --kubeconfig={{ kubeconfig_path }} rollout status deployment/kibana --timeout=300s -n {{ k8s_namespace }}
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
+      become: yes
 
     - name: 6. CONFIGURE KIBANA 
       ansible.builtin.uri:
