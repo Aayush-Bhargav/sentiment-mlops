@@ -12,7 +12,7 @@ spec:
     - ReadWriteOnce # Only one node can mount this volume read-write
   resources:
     requests:
-      storage: 5Gi # Request 5 GB of persistent storage
+      storage: 2Gi # Request 2 GB of persistent storage
 ---
 # ===============================================
 # 2. ELASTICSEARCH DEPLOYMENT (with Persistence)
