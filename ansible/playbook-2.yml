@@ -127,7 +127,7 @@
         ln -sf /home/{{ ansible_user }}/mlflow_history mlruns
         python3 train.py
 
-        rm mlruns
+        rm -f mlruns
         mkdir -p mlruns/latest_model
         
         LATEST_PKL_PATH=""
