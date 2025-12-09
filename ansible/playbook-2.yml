@@ -130,21 +130,27 @@
         rm mlruns
         mkdir -p mlruns/latest_model
         
-        # Find the LATEST 'model.pkl' file
-        LATEST_PKL=$(find /var/lib/jenkins/mlflow_history -name "model.pkl" -type f -printf "%T@ %p\n" | sort -n | tail -1 | cut -f2- -d" ")
+        LATEST_PKL_PATH=""
+    
+        # Find all model.pkl, sort by modification time, get the last one
+        # Note: Using sed instead of the complex pipe is cleaner and more standard for this task
+        LATEST_LINE=$(find /var/lib/jenkins/mlflow_history -name "model.pkl" -type f -printf "%T@ %p\n" | sort -n | tail -1)
         
-        if [ -z "$LATEST_PKL" ]; then
-            echo "ERROR: No model.pkl found in /var/lib/jenkins/mlflow_history. Stopping deployment."
+        if [ -z "$LATEST_LINE" ]; then
+            echo "ERROR: No model.pkl found in MLflow history. Cannot proceed."
             exit 1
         fi
-
-        echo "Found latest model at: $LATEST_PKL"
+        
+        # Extract the path (everything after the first space) from the line
+        LATEST_PKL_PATH=$(echo "$LATEST_LINE" | sed 's/[^ ]* //')
+        
+        echo "Found latest model at: $LATEST_PKL_PATH"
         
         # Get the DIRECTORY that holds this file (e.g. .../artifacts)
-        ARTIFACT_DIR=$(dirname "$LATEST_PKL")
+        ARTIFACT_DIR=$(dirname "$LATEST_PKL_PATH")
         
         # Copy the ENTIRE content of that directory (model.pkl + MLmodel + conda.yaml)
-        # This satisfies MLflow's requirements
+        # The -v flag is helpful for debugging copy permissions/paths
         cp -rv "$ARTIFACT_DIR"/* mlruns/latest_model/
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
