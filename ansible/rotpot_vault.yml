@@ -1,0 +1,6 @@
+---
+ansible_become_pass: 8289
+db_host: "postgres-service"
+postgres_user: "user"
+postgres_password: "password"
+postgres_db: "rotten_potatoes_db"

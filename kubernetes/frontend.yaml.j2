@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: praveenpeterjay2/mlops-frontend:latest
+        image: {{ frontend_image }}:{{ docker_tag }}
         imagePullPolicy: Always
         ports:
         - containerPort: 8501

@@ -16,10 +16,10 @@ import requests     # Used for the manual Elasticsearch connection
 import datetime     # Used for timestamps
 
 # --- CONFIGURATION ---
-DB_HOST = os.getenv("DB_HOST", "postgres-service")
-DB_USER = os.getenv("POSTGRES_USER", "user")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
-DB_NAME = os.getenv("POSTGRES_DB", "rotten_potatoes_db")
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("POSTGRES_USER")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+DB_NAME = os.getenv("POSTGRES_DB")
 SQLALCHEMY_DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}"
 
 # --- CUSTOM LOG HANDLER (The Fix for Python 3.12) ---

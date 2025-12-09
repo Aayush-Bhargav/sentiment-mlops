@@ -4,23 +4,25 @@
   gather_facts: no 
   vars:
     # Variables passed from the Jenkinsfile environment
+    dockerhub_user: "{{ lookup('env', 'DOCKER_CREDS_USR') }}"
+    dockerhub_pass: "{{ lookup('env', 'DOCKER_CREDS_PSW') }}"
+    k8s_namespace: "rottenpotatoes"
+    kubeconfig_path: "{{ ansible_user_dir }}/.kube/config"
     backend_image: "{{ lookup('env', 'BACKEND_IMAGE') }}"
     frontend_image: "{{ lookup('env', 'FRONTEND_IMAGE') }}"
     docker_tag: "{{ lookup('env', 'DOCKER_TAG') }}"
-    dockerhub_user: "{{ lookup('env', 'DOCKER_USR') }}"
-    dockerhub_pass: "{{ lookup('env', 'DOCKER_PSW') }}"
-    kubeconfig_path: "{{ ansible_user_dir }}/.kube/config"
   
   vars_files:
     - sudo_pwd_vault.yml
 
   tasks:
+    # Tasks related to directory management
     - name: Ensure project directory exists
       ansible.builtin.file:
         path: /home/{{ ansible_user }}/project_workspace
         state: directory
         owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}" # Explicitly set group for clarity
+        group: "{{ ansible_user }}" 
         mode: '0755'
       become: yes
 
@@ -52,6 +54,7 @@
           - "--exclude=.dvc/cache" 
       become: yes
 
+    # Kubernetes pre-requisites
     - name: Get Minikube IP
       ansible.builtin.command: minikube ip
       register: minikube_ip_cmd
@@ -62,8 +65,39 @@
         path: /etc/hosts
         line: "{{ minikube_ip_cmd.stdout }} rottenpotatoes.com kibana.com"
         state: present
+    
+    - name: Create rottenpotatoes namespace
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        api_version: v1
+        kind: Namespace
+        name: {{ k8s_namespace }}
+        state: present
+    
+    - name: Create Postgres Kubernetes Secret
+      ansible.builtin.shell: |
+        kubectl --kubeconfig={{ kubeconfig_path }} create secret generic postgres-secret \
+          --from-literal=DB_HOST='{{ db_host }}' \
+          --from-literal=POSTGRES_USER='{{ postgres_user }}' \
+          --from-literal=POSTGRES_PASSWORD='{{ postgres_password }}' \
+          --from-literal=POSTGRES_DB='{{ postgres_db }}' \
+          --dry-run=client -o yaml | kubectl --kubeconfig={{ kubeconfig_path }} apply -f - -n {{ k8s_namespace }}
+      args:
+        chdir: "/home/{{ ansible_user }}/project_workspace/kubernetes"
+      become: yes
+    
+    - name: Render backend.yaml
+      ansible.builtin.template:
+        src: kubernetes/backend.yaml.j2
+        dest: /home/{{ ansible_user }}/project_workspace/kubernetes/k8s-backend.yaml
 
-    - name: 1. TRAIN MODEL (CI)
+    - name: Render frontend.yaml
+      ansible.builtin.template:
+        src: kubernetes/frontend.yaml.j2
+        dest: /home/{{ ansible_user }}/project_workspace/kubernetes/k8s-frontend.yaml
+
+    # Main sequence of tasks
+    - name: 1. TRAIN MODEL 
       ansible.builtin.shell: |
         echo "Starting MLOps training steps..."
         set -e
@@ -110,23 +144,23 @@
     - name: 4. UPDATE KUBERNETES DEPLOYMENT
       ansible.builtin.shell: |
         set -e
-        cd /home/{{ ansible_user }}/project_workspace
+        cd /home/{{ ansible_user }}/project_workspace/kubernetes
 
-        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-logging.yaml
-        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-database.yaml
+        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-logging.yaml -n {{ k8s_namespace }}
+        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-database.yaml -n {{ k8s_namespace }}
 
-        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-backend.yaml
-        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-frontend.yaml
+        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-backend.yaml -n {{ k8s_namespace }}
+        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-frontend.yaml -n {{ k8s_namespace }}
 
-        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-ingress.yaml
+        kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-ingress.yaml -n {{ k8s_namespace }}
 
-        kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/backend-deployment
-        kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/frontend-deployment
+        kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/backend-deployment -n {{ k8s_namespace }}
+        kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/frontend-deployment -n {{ k8s_namespace }}
       become: yes
 
     - name: 5. DEPLOY LOGGING INFRASTRUCTURE
       ansible.builtin.shell: |
-        kubectl --kubeconfig={{ kubeconfig_path }} rollout status deployment/kibana --timeout=300s
+        kubectl --kubeconfig={{ kubeconfig_path }} rollout status deployment/kibana --timeout=300s -n {{ k8s_namespace }}
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
       become: yes

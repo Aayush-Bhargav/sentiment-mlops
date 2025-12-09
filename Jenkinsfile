@@ -3,19 +3,18 @@ pipeline {
 
     environment {
         // Existing credential ID
-        
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub_credentials')
-    
-        // YOUR Docker Hub Username
-        DOCKERHUB_USER = "praveenpeterjay2" 
+        DOCKER_CREDS = credentials('dockerhub_credentials')
         
         // Image Names
-        BACKEND_IMAGE = "${DOCKERHUB_USER}/mlops-backend"
-        FRONTEND_IMAGE = "${DOCKERHUB_USER}/mlops-frontend"
+        BACKEND_IMAGE = "${DOCKER_CREDS_USR}/mlops-backend"
+        FRONTEND_IMAGE = "${DOCKER_CREDS_USR}/mlops-frontend"
         DOCKER_TAG = "latest"
+
+        // Ansible vault password
+        ANSIBLE_VAULT_PASSWORD = credentials('rotpot_vault_pass')
         
         // Email for notifications
-        EMAIL_ID = "praveenpeterjay@gmail.com"
+        EMAIL_ID = credentials('email_id')
     }
 
     stages {
@@ -29,22 +28,18 @@ pipeline {
             steps {
                 echo 'Running Configuration Management playbook (install Docker/K8s tools)...'
 
-                withCredentials([
-                    string(credentialsId: 'sudo_pass_vault_credentials', variable: 'ANSIBLE_VAULT_PASSWORD')
-                ]) {
-                    sh '''
-                        # Write vault password WITHOUT Groovy interpolation
-                        printf "%s" "$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
+                sh '''
+                    # Write vault password WITHOUT Groovy interpolation
+                    printf "%s" "$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
 
-                        ansible-playbook \
-                            -i ansible/inventory.ini \
-                            ansible/playbook-1.yml \
-                            --vault-password-file vault-pass.txt \
-                            --extra-vars workspace="$WORKSPACE"
+                    ansible-playbook \
+                        -i ansible/inventory.ini \
+                        ansible/playbook-1.yml \
+                        --vault-password-file vault-pass.txt \
+                        --extra-vars workspace="$WORKSPACE"
 
-                        rm -f vault-pass.txt
-                    '''
-                }
+                    rm -f vault-pass.txt
+                '''
             }
         }
 
@@ -52,26 +47,17 @@ pipeline {
             steps {
                 echo 'Executing full CI/CD pipeline on Ansible host...'
 
-                withCredentials([
-                    usernamePassword(credentialsId: 'dockerhub_credentials',
-                                    usernameVariable: 'DOCKER_USR',
-                                    passwordVariable: 'DOCKER_PSW'),
-                    string(credentialsId: 'sudo_pass_vault_credentials', variable: 'ANSIBLE_VAULT_PASSWORD')
-                ]) {
-                    sh '''
-                        printf "%s" "$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
+                sh '''
+                    printf "%s" "$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
 
-                        ansible-playbook \
-                            -i ansible/inventory.ini \
-                            ansible/playbook-2.yml \
-                            --vault-password-file vault-pass.txt \
-                            --extra-vars workspace="$WORKSPACE" \
-                            --extra-vars docker_username="$DOCKER_USR" \
-                            --extra-vars docker_password="$DOCKER_PSW"
+                    ansible-playbook \
+                        -i ansible/inventory.ini \
+                        ansible/playbook-2.yml \
+                        --vault-password-file vault-pass.txt \
+                        --extra-vars workspace="$WORKSPACE" \
 
-                        rm -f vault-pass.txt
-                    '''
-                }
+                    rm -f vault-pass.txt
+                '''
             }
         }
 
