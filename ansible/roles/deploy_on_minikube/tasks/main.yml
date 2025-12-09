@@ -18,4 +18,5 @@
 
     kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/kibana -n {{ k8s_namespace }}
     kubectl --kubeconfig={{ kubeconfig_path }} rollout status deployment/kibana --timeout=300s -n {{ k8s_namespace }}
+  become_user: "{{ ansible_user }}"
   become: yes

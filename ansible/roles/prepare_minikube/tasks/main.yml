@@ -27,6 +27,7 @@
       --dry-run=client -o yaml | kubectl --kubeconfig={{ kubeconfig_path }} apply -f - -n {{ k8s_namespace }}
   args:
     chdir: "/home/{{ ansible_user }}/project_workspace/kubernetes"
+  become_user: "{{ ansible_user }}"  
   become: yes
 
 - name: Render backend.yaml with env variables on remote
