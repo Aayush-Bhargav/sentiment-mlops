@@ -107,7 +107,7 @@
 
     # Main sequence of tasks
     - name: 1. TRAIN MODEL 
-      ansible.builtin.shell: |  
+      ansible.builtin.shell: |
         echo "Starting MLOps training steps..."
         set -e
         cd /home/{{ ansible_user }}/project_workspace
@@ -126,32 +126,6 @@
         # Handle MLflow history link (Ensure path is consistent)
         ln -sf /home/{{ ansible_user }}/mlflow_history mlruns
         python3 train.py
-
-        rm -f mlruns
-        mkdir -p mlruns/latest_model
-        
-        LATEST_PKL_PATH=""
-    
-        # Find all model.pkl, sort by modification time, get the last one
-        # Note: Using sed instead of the complex pipe is cleaner and more standard for this task
-        LATEST_LINE=$(find /var/lib/jenkins/mlflow_history -name "model.pkl" -type f -printf "%T@ %p\n" | sort -n | tail -1)
-        
-        if [ -z "$LATEST_LINE" ]; then
-            echo "ERROR: No model.pkl found in MLflow history. Cannot proceed."
-            exit 1
-        fi
-        
-        # Extract the path (everything after the first space) from the line
-        LATEST_PKL_PATH=$(echo "$LATEST_LINE" | sed 's/[^ ]* //')
-        
-        echo "Found latest model at: $LATEST_PKL_PATH"
-        
-        # Get the DIRECTORY that holds this file (e.g. .../artifacts)
-        ARTIFACT_DIR=$(dirname "$LATEST_PKL_PATH")
-        
-        # Copy the ENTIRE content of that directory (model.pkl + MLmodel + conda.yaml)
-        # The -v flag is helpful for debugging copy permissions/paths
-        cp -rv "$ARTIFACT_DIR"/* mlruns/latest_model/
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
       become: yes
