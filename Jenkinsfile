@@ -7,7 +7,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub_credentials')
     
         // YOUR Docker Hub Username
-        DOCKERHUB_USER = "aayushbhargav0507@gmail.com" 
+        DOCKERHUB_USER = "aayushbhargav57.com" 
         
         // Image Names
         BACKEND_IMAGE = "${DOCKERHUB_USER}/mlops-backend"
