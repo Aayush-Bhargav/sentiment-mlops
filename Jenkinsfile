@@ -7,7 +7,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub_credentials')
     
         // YOUR Docker Hub Username
-        DOCKERHUB_USER = "aayushbhargav57.com" 
+        DOCKERHUB_USER = "aayushbhargav57" 
         
         // Image Names
         BACKEND_IMAGE = "${DOCKERHUB_USER}/mlops-backend"
@@ -77,34 +77,40 @@ pipeline {
 
         stage('Train Model (CI)') {
             steps {
-                echo 'Training with Persistent History...'
+                echo 'Training and Selecting BEST Model...'
                 sh '''
                 python3 -m venv venv
                 . venv/bin/activate
                 pip install --upgrade pip
                 pip install -r requirements.txt
                 
-                # 1. SETUP DVC
+                # 1. SETUP DVC & PULL DATA
                 dvc remote add -d -f mylocal /tmp/dvc_store
                 dvc pull
                 
-                # 2. LINK TO PERMANENT HISTORY (The Trick)
-                # Instead of deleting mlruns, we link it to the permanent folder
-                # This way, Run 1, Run 2, Run 3... are all saved forever.
-                ln -s /var/lib/jenkins/mlflow_history mlruns
-                
-                # 3. TRAIN
-                # MLflow will now append the new run to the history
+                # 2. LINK HISTORY & TRAIN
+                ln -sf /var/lib/jenkins/mlflow_history mlruns
                 python3 train.py
                 
-                # 4. UNLINK (Cleanup for Docker build)
-                # We need to copy the *content* into the docker image, not the link
+                # 3. THE OPTIMIZATION (Diet Plan)
+                # Remove the link to the heavy history folder
                 rm mlruns
-                cp -r /var/lib/jenkins/mlflow_history mlruns
+                
+                # Create a fresh, empty folder for the Docker image
+                mkdir -p mlruns/latest_model
+                
+                # Find the LATEST 'model.pkl' file from the history
+                # We sort by time (-t) and pick the first one (head -1)
+                LATEST_MODEL=$(find /var/lib/jenkins/mlflow_history -name "model.pkl" -type f -printf "%T@ %p\n" | sort -n | tail -1 | cut -f2- -d" ")
+                
+                echo "Deploying Model: $LATEST_MODEL"
+                
+                # Copy ONLY that single file into the build folder
+                # Your app.py is smart enough to find it anywhere in 'mlruns'
+                cp "$LATEST_MODEL" mlruns/latest_model/
                 '''
             }
         }
-
         stage('Build Docker Images') {
             steps {
                 echo 'Building Images (With Model Baked In)...'
