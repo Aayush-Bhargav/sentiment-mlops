@@ -1181,3 +1181,7 @@ When this playbook runs:
     Ansible configures the Index Pattern.
 
     You open the browser, and the logs are already there. No manual setup required.
+
+----------------------------------------------------------------------------------------
+
+Explanations for the final versions:
