@@ -54,6 +54,7 @@
     - name: Get Minikube IP
       ansible.builtin.command: minikube ip
       register: minikube_ip_cmd
+      become_user: "{{ ansible_user }}"
 
     - name: Add Minikube hostnames to /etc/hosts
       become: yes
