@@ -70,7 +70,7 @@
 
     - name: Create rottenpotatoes namespace
       ansible.builtin.shell: |
-        kubectl --kubeconfig={{ kubeconfig_path }} create namespace {{ k8s_namespace }}
+        kubectl --kubeconfig={{ kubeconfig_path }} create namespace {{ k8s_namespace }} || true
       become: yes
         
     - name: Create Postgres Kubernetes Secret
