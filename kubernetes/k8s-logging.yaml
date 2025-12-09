@@ -1,6 +1,3 @@
-# ===============================================
-# 1. PERSISTENT VOLUME CLAIM (PVC) for Elasticsearch Data
-# ===============================================
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -9,14 +6,11 @@ metadata:
     app: elasticsearch
 spec:
   accessModes:
-    - ReadWriteOnce # Only one node can mount this volume read-write
+    - ReadWriteOnce 
   resources:
     requests:
-      storage: 2Gi # Request 2 GB of persistent storage
+      storage: 2Gi 
 ---
-# ===============================================
-# 2. ELASTICSEARCH DEPLOYMENT (with Persistence)
-# ===============================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,15 +25,12 @@ spec:
       labels:
         app: elasticsearch
     spec:
-      # --- Init Container to Fix Permissions ---
-      # Elasticsearch runs as UID 1000. This ensures the mounted volume 
-      # is correctly owned by that user before the main container starts.
       initContainers:
       - name: fix-permissions
         image: busybox:1.36
         command: ["sh", "-c", "chown -R 1000:1000 /usr/share/elasticsearch/data"]
         securityContext:
-          runAsUser: 0 # Must run as root to change ownership
+          runAsUser: 0 
         volumeMounts:
         - name: elasticsearch-persistent-storage
           mountPath: /usr/share/elasticsearch/data
@@ -63,17 +54,13 @@ spec:
             memory: "512Mi"
         volumeMounts:
         - name: elasticsearch-persistent-storage
-          mountPath: /usr/share/elasticsearch/data # Mount point for data
+          mountPath: /usr/share/elasticsearch/data 
 
-      # --- Volume Link to PVC ---
       volumes:
       - name: elasticsearch-persistent-storage
         persistentVolumeClaim:
           claimName: elasticsearch-pvc # Link to the PVC
 ---
-# ===============================================
-# 3. ELASTICSEARCH SERVICE
-# ===============================================
 apiVersion: v1
 kind: Service
 metadata:
@@ -85,9 +72,6 @@ spec:
   - port: 9200
     targetPort: 9200
 ---
-# ===============================================
-# 4. KIBANA DEPLOYMENT
-# ===============================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -117,9 +101,6 @@ spec:
             cpu: "100m"
             memory: "512Mi"
 ---
-# ===============================================
-# 5. KIBANA SERVICE
-# ===============================================
 apiVersion: v1
 kind: Service
 metadata:
