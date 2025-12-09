@@ -92,22 +92,21 @@ pipeline {
                 ln -sf /var/lib/jenkins/mlflow_history mlruns
                 python3 train.py
                 
-                # 3. THE OPTIMIZATION (Diet Plan)
-                # Remove the link to the heavy history folder
+                # 3. THE OPTIMIZATION (Corrected)
                 rm mlruns
-                
-                # Create a fresh, empty folder for the Docker image
                 mkdir -p mlruns/latest_model
                 
-                # Find the LATEST 'model.pkl' file from the history
-                # We sort by time (-t) and pick the first one (head -1)
-                LATEST_MODEL=$(find /var/lib/jenkins/mlflow_history -name "model.pkl" -type f -printf "%T@ %p\n" | sort -n | tail -1 | cut -f2- -d" ")
+                # Find the LATEST 'model.pkl' file
+                LATEST_PKL=$(find /var/lib/jenkins/mlflow_history -name "model.pkl" -type f -printf "%T@ %p\n" | sort -n | tail -1 | cut -f2- -d" ")
                 
-                echo "Deploying Model: $LATEST_MODEL"
+                echo "Found latest model at: $LATEST_PKL"
                 
-                # Copy ONLY that single file into the build folder
-                # Your app.py is smart enough to find it anywhere in 'mlruns'
-                cp "$LATEST_MODEL" mlruns/latest_model/
+                # Get the DIRECTORY that holds this file (e.g. .../artifacts)
+                ARTIFACT_DIR=$(dirname "$LATEST_PKL")
+                
+                # Copy the ENTIRE content of that directory (model.pkl + MLmodel + conda.yaml)
+                # This satisfies MLflow's requirements
+                cp -r "$ARTIFACT_DIR"/* mlruns/latest_model/
                 '''
             }
         }
