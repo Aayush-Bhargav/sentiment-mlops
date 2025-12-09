@@ -85,16 +85,14 @@
         chdir: "/home/{{ ansible_user }}/project_workspace/kubernetes"
       become: yes
 
-    - name: Render backend.yaml
-      ansible.builtin.template:
-        src: kubernetes/backend.yaml.j2
-        dest: /home/{{ ansible_user }}/project_workspace/kubernetes/k8s-backend.yaml
+    - name: Render backend.yaml with env variables
+      ansible.builtin.shell: |
+        envsubst < kubernetes/backend.yaml.j2 > /home/{{ ansible_user }}/project_workspace/kubernetes/k8s-backend.yaml
       become: yes
 
     - name: Render frontend.yaml
-      ansible.builtin.template:
-        src: kubernetes/frontend.yaml.j2
-        dest: /home/{{ ansible_user }}/project_workspace/kubernetes/k8s-frontend.yaml
+      ansible.builtin.shell: |
+        envsubst < kubernetes/frontend.yaml.j2 > /home/{{ ansible_user }}/project_workspace/kubernetes/k8s-frontend.yaml
       become: yes
 
     # Main sequence of tasks
