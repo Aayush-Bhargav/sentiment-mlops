@@ -3,12 +3,12 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# 2. Install libraries (this layer is cached)
+# 2. Install libraries
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the Streamlit application entry point
-COPY frontend.py .
+# 3. Copy code
+COPY . .
 
 # 4. Open the door (Port 8501 is standard for Streamlit)
 EXPOSE 8501
