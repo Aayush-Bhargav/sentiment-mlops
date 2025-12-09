@@ -107,7 +107,7 @@
 
     # Main sequence of tasks
     - name: 1. TRAIN MODEL 
-      ansible.builtin.shell: |
+      ansible.builtin.shell: |  
         echo "Starting MLOps training steps..."
         set -e
         cd /home/{{ ansible_user }}/project_workspace
@@ -133,6 +133,11 @@
         # Find the LATEST 'model.pkl' file
         LATEST_PKL=$(find /var/lib/jenkins/mlflow_history -name "model.pkl" -type f -printf "%T@ %p\n" | sort -n | tail -1 | cut -f2- -d" ")
         
+        if [ -z "$LATEST_PKL" ]; then
+            echo "ERROR: No model.pkl found in /var/lib/jenkins/mlflow_history. Stopping deployment."
+            exit 1
+        fi
+
         echo "Found latest model at: $LATEST_PKL"
         
         # Get the DIRECTORY that holds this file (e.g. .../artifacts)
@@ -140,7 +145,7 @@
         
         # Copy the ENTIRE content of that directory (model.pkl + MLmodel + conda.yaml)
         # This satisfies MLflow's requirements
-        cp -r "$ARTIFACT_DIR"/* mlruns/latest_model/
+        cp -rv "$ARTIFACT_DIR"/* mlruns/latest_model/
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
       become: yes
