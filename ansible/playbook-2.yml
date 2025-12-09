@@ -66,6 +66,7 @@
         path: /etc/hosts
         line: "{{ minikube_ip_cmd.stdout }} rottenpotatoes.com kibana.com"
         state: present
+      become_user: "{{ ansible_user }}"
       become: yes
 
     - name: Create rottenpotatoes namespace
@@ -97,7 +98,7 @@
 
     - name: Render backend.yaml with env variables on remote
       ansible.builtin.shell: |
-        export FRONTEND_IMAGE="{{ backend_image }}"
+        export FRONTEND_IMAGE="{{ frontend_image }}"
         export DOCKER_TAG="{{ docker_tag }}"
         envsubst < templates/frontend.yaml.j2 > k8s-frontend.yaml
       args:
@@ -190,5 +191,6 @@
       retries: 10     
       delay: 10        
       until: kibana_response.status == 200 or kibana_response.status == 409
+      become: yes
 
       
