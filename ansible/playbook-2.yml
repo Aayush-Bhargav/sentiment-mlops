@@ -18,22 +18,12 @@
   tasks:
     # Tasks related to directory management
     - name: Ensure project directory exists
-      ansible.builtin.file:
-        path: /home/{{ ansible_user }}/project_workspace
-        state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}" 
-        recurse: yes
+      ansible.builtin.shell: |
+        mkdir -p /home/{{ ansible_user }}/project_workspace
+        chown -R {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/project_workspace
       become: yes
-
-    - name: Ensure MLflow history directory exists and is owned by user
-      ansible.builtin.file:
-        path: /home/{{ ansible_user }}/mlflow_history
-        state: directory
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
-        mode: '0755'
-      become: yes
+      args:
+        creates: /home/{{ ansible_user }}/project_workspace
       
     - name: Copy MLflow history to remote host
       ansible.builtin.synchronize:
