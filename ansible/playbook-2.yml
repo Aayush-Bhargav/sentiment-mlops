@@ -23,7 +23,7 @@
         state: directory
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}" 
-        mode: '0755'
+        recurse: yes
       become: yes
 
     - name: Ensure MLflow history directory exists and is owned by user
@@ -108,11 +108,9 @@
     - name: 1. TRAIN MODEL & PREPARE FOR DEPLOYMENT
       become: yes
       become_user: "{{ ansible_user }}"
-
       ansible.builtin.shell: |
         echo "=== Starting MLOps Training ==="
         set -e
-        cd /home/{{ ansible_user }}/project_workspace
 
         echo "=== Creating new virtualenv ==="
         python3 -m venv venv
@@ -152,10 +150,8 @@
         echo "Copying from artifact dir: $ARTIFACT_DIR"
 
         cp -rv "$ARTIFACT_DIR"/* mlruns/latest_model/
-
       args:
         chdir: /home/{{ ansible_user }}/project_workspace
-
 
     - name: 2. BUILD DOCKER IMAGES
       ansible.builtin.shell: |
