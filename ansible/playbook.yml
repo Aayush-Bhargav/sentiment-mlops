@@ -19,10 +19,10 @@
   roles:
     - update_system
     - install_docker
-    - install_minikube
+    - install_kubernetes
     - set_up_workspace
     - train_model
     - build_and_push_to_docker
-    - prepare_minikube
-    - deploy_on_minikube
+    - prepare_kubernetes
+    - deploy_on_kubernetes
     - configure_kibana
