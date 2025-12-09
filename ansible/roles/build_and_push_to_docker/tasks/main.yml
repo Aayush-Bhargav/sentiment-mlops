@@ -1,0 +1,18 @@
+- name: Build Docker Images
+  ansible.builtin.shell: |
+    set -e
+    cd /home/{{ ansible_user }}/project_workspace
+    docker build -f docker/Dockerfile.backend -t {{ backend_image }}:{{ docker_tag }} .
+    docker build -f docker/Dockerfile.frontend -t {{ frontend_image }}:{{ docker_tag }} .
+  become_user: "{{ ansible_user }}"
+  become: yes
+
+- name: Push to DockerHub
+  ansible.builtin.shell: |
+    set -e
+    cd /home/{{ ansible_user }}/project_workspace
+    echo "{{ dockerhub_pass }}" | docker login -u "{{ dockerhub_user }}" --password-stdin
+    docker push {{ backend_image }}:{{ docker_tag }}
+    docker push {{ frontend_image }}:{{ docker_tag }}
+    docker logout
+  become: yes

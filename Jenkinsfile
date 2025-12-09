@@ -24,35 +24,35 @@ pipeline {
             }
         }
 
-        stage('Configure Remote Host') {
+        // stage('Configure Remote Host') {
+        //     steps {
+        //         echo 'Running Configuration Management playbook (install Docker/K8s tools)...'
+
+        //         sh '''
+        //             # Write vault password WITHOUT Groovy interpolation
+        //             printf "%s" "$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
+
+        //             ansible-playbook \
+        //                 -i ansible/inventory.ini \
+        //                 ansible/playbook-1.yml \
+        //                 --vault-password-file vault-pass.txt \
+        //                 --extra-vars workspace="$WORKSPACE"
+
+        //             rm -f vault-pass.txt
+        //         '''
+        //     }
+        // }
+
+        stage('Configure, Build, Train, & Deploy on Host(s)') {
             steps {
-                echo 'Running Configuration Management playbook (install Docker/K8s tools)...'
+                echo 'Executing full CI/CD pipeline on Ansible Host(s)...'
 
                 sh '''
-                    # Write vault password WITHOUT Groovy interpolation
                     printf "%s" "$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
 
                     ansible-playbook \
                         -i ansible/inventory.ini \
                         ansible/playbook-1.yml \
-                        --vault-password-file vault-pass.txt \
-                        --extra-vars workspace="$WORKSPACE"
-
-                    rm -f vault-pass.txt
-                '''
-            }
-        }
-
-        stage('Build, Train, & Deploy (Remote)') {
-            steps {
-                echo 'Executing full CI/CD pipeline on Ansible host...'
-
-                sh '''
-                    printf "%s" "$ANSIBLE_VAULT_PASSWORD" > vault-pass.txt
-
-                    ansible-playbook \
-                        -i ansible/inventory.ini \
-                        ansible/playbook-2.yml \
                         --vault-password-file vault-pass.txt \
                         --extra-vars workspace="$WORKSPACE" \
 
