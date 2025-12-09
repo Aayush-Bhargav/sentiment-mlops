@@ -1,5 +1,4 @@
 # 1. MLflow and Machine Learning Artifacts (Critical for Size Reduction)
-mlruns/1/
 .dvc/
 *.dvc
 data/
