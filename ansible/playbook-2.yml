@@ -20,7 +20,7 @@
     - name: Ensure project directory exists
       ansible.builtin.shell: |
         mkdir -p /home/{{ ansible_user }}/project_workspace
-        chown -R {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/project_workspace
+        sudo chown -R {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/project_workspace
       become: yes
       args:
         creates: /home/{{ ansible_user }}/project_workspace
