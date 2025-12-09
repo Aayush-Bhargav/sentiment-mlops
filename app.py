@@ -22,7 +22,7 @@ DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
 DB_NAME = os.getenv("POSTGRES_DB", "rotten_potatoes_db")
 SQLALCHEMY_DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}"
 
-# --- SMART LOG HANDLER ---
+# --- SMART LOG HANDLER (This logic extracts the tags) ---
 class SimpleElasticsearchHandler(logging.Handler):
     def __init__(self, host, port, index):
         super().__init__()
@@ -39,7 +39,7 @@ class SimpleElasticsearchHandler(logging.Handler):
                 "logger": record.name
             }
             
-            # Add Custom "Extra" Fields
+            # Add Custom "Extra" Fields (The Important Part)
             standard_attr = ["name", "msg", "args", "levelname", "levelno", "pathname", 
                              "filename", "module", "exc_info", "exc_text", "stack_info", 
                              "lineno", "funcName", "created", "msecs", "relativeCreated", 
@@ -113,6 +113,7 @@ class ScoreResponse(BaseModel):
 # --- APP STARTUP ---
 app = FastAPI(title="Rotten Potatoes Backend API", description="FastAPI, MLflow, and Persistent DB Integration.")
 
+# NOTE: This log message is different now ("System Startup" vs "Initializing...")
 log.info("System Startup", extra={"event_type": "LIFECYCLE", "status": "STARTING"})
 
 model = None
@@ -188,7 +189,7 @@ def home():
 
 @app.get("/movies", response_model=List[MovieData])
 def get_all_movies(db: Session = Depends(get_db)):
-    # Log Traffic
+    # NOTE: This message is different ("View Movies List" vs "API Request: Fetching...")
     log.info("View Movies List", extra={"event_type": "TRAFFIC", "endpoint": "/movies"})
     movies = db.query(Movie).all()
     return [{"id": m.id, "name": m.name, "description": m.description} for m in movies]
@@ -201,7 +202,6 @@ def get_movie_score(movie_id: int, db: Session = Depends(get_db)):
 
     score = 0.0 if total_reviews == 0 else (positive_count / total_reviews) * 100
 
-    # Log Score Calculation (Structured!)
     log.info("Score Viewed", extra={
         "event_type": "VIEW_SCORE",
         "movie_id": movie_id,
@@ -223,11 +223,11 @@ def submit_and_predict_review(review_input: ReviewInput, db: Session = Depends(g
         sentiment = prediction[0]
         is_positive = sentiment.lower() == "positive"
         
-        # LOGGING THE PREDICTION (Crucial for Pie Charts)
+        # THIS IS THE MOST IMPORTANT LOG FOR YOUR PIE CHART
         log.info("Prediction Made", extra={
             "event_type": "PREDICTION",
             "movie_id": review_input.movie_id,
-            "sentiment": sentiment, # "Positive" or "Negative"
+            "sentiment": sentiment, 
             "model_version": latest_run_id
         })
         
