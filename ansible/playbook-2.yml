@@ -85,9 +85,10 @@
         chdir: "/home/{{ ansible_user }}/project_workspace/kubernetes"
       become: yes
 
-    - name: Render backend.yaml with env variables
-      ansible.builtin.shell: |
-        envsubst < templates/backend.yaml.j2 > k8s-backend.yaml
+    - name: Render backend.yaml using Ansible template module
+      ansible.builtin.template:
+        src: templates/backend.yaml.j2
+        dest: k8s-backend.yaml
       args:
         chdir: "/home/{{ ansible_user }}/project_workspace/kubernetes"
       become: yes
