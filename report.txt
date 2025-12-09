@@ -1184,4 +1184,423 @@ When this playbook runs:
 
 ----------------------------------------------------------------------------------------
 
+Kibana Visualizations:
+
+This is the final victory lap! Since your logging is now fully structured (with movie_id, sentiment, etc.), Kibana lets you slice and dice the data exactly how you want.
+
+There are two ways to visualize particular movies:
+
+    The Filter Method: "Show me only Movie 1."
+
+    The Comparison Method: "Show me Movie 1 vs. Movie 2 side-by-side."
+
+Here is how to do both.
+Method 1: The "Drill Down" (Focus on One Movie)
+
+This is best if you want your entire dashboard (all pie charts, traffic graphs, etc.) to update and show data for only one specific movie.
+
+    Go to your Dashboard.
+
+    Look at the top-left corner, just under the search bar. You will see a button "+ Add filter".
+
+    Click it and set these values:
+
+        Field: movie_id
+
+        Operator: is
+
+        Value: 1 (or whatever ID you want to check)
+
+    Click Save.
+
+Result: Instantly, every graph on your screen will change.
+
+    The Traffic Line Graph will show traffic only for Movie 1.
+
+    The Sentiment Pie Chart will show predictions only for Movie 1.
+
+(To go back, just click the "x" on the filter pill at the top).
+Method 2: The "Comparison" (Compare All Movies)
+
+This is best if you want to see which movie is more popular or has better ratings without switching filters constantly.
+
+Let's build a "Sentiment by Movie" Bar Chart:
+
+    Click Create visualization (Lens).
+
+    The X-Axis (The Movies):
+
+        Find the field movie_id in the left list.
+
+        Drag and drop it into the Horizontal axis (bottom) box.
+
+        Kibana will now show bars labeled "1", "2", "3".
+
+    The Y-Axis (The Count):
+
+        Drag Records (or Count) to the Vertical axis (left) box.
+
+        Now you have a bar chart showing "Most Popular Movies" (by traffic).
+
+    The Split (The Sentiment):
+
+        Find the field sentiment.keyword.
+
+        Drag and drop it into the Break down by box.
+
+    The Filter (Important):
+
+        We only want "Predictions," not generic traffic.
+
+        In the search bar at the top, type: event_type : "PREDICTION".
+
+        Hit Enter.
+
+Result: You will see a Stacked Bar Chart.
+
+    Bar 1 (Movie 1): Might be tall, mostly green (Positive).
+
+    Bar 2 (Movie 2): Might be short, mostly red (Negative).
+
+Summary of what you achieved
+
+You have moved from a "Student Project" to an "Enterprise MLOps Platform."
+
+    Logs aren't just text; they are a database.
+
+    You don't guess what's happening; you query it.
+
+    You don't SSH into servers; you look at dashboards.
+
+Next Step: Save this Dashboard (Click "Save" at the top right) so you can show it off in your demo!
+
+--------------------------------------------------------------------------------
+
 Explanations for the final versions:
+
+MLOps Project Technical Report: "Rotten Potatoes"
+1. Executive Summary
+
+This project implements a production-grade MLOps platform for a movie review sentiment analysis application. The system leverages FastAPI for the backend, Streamlit for the frontend, and PostgreSQL for persistent storage. The entire stack is containerized using Docker and orchestrated via Kubernetes (Minikube).
+
+The core MLOps workflow is automated using a Jenkins CI/CD pipeline that handles model training, artifact optimization, container building, and deployment. Observability is achieved through a "Slim" ELK Stack (Elasticsearch, Kibana) integration, enabling real-time structured logging and visualization of business metrics.
+2. Application Architecture (The Code)
+A. Backend Service (app.py)
+
+The backend serves as the brain of the application, handling API requests, database interactions, and AI inference.
+
+    Framework: Built on FastAPI, chosen for its high performance and automatic generation of Swagger/OpenAPI documentation.
+
+    Database Integration (SQLAlchemy):
+
+        ORM Models: Defines two primary tables: Movie (static movie data) and MovieReview (user-generated content).
+
+        Seeding Logic: On startup (startup_event), the application checks if the database is empty. If so, it seeds initial data from JSON files to ensure the app is never "blank" upon deployment.
+
+    AI Model Serving:
+
+        Dynamic Loading: Instead of hardcoding paths, the app dynamically searches the local directory for model.pkl. This allows the Docker container to work regardless of where the model artifact is placed during the build.
+
+        Inference: The /submit_review endpoint accepts text, vectorizes it (using the loaded pipeline), and returns a "Positive" or "Negative" sentiment.
+
+    Observability (Custom Logging):
+
+        Problem: The standard Python logging library prints plain text, which is hard to graph in Kibana.
+
+        Solution: A custom class, SimpleElasticsearchHandler, was implemented. It overrides the standard emit function to format log records into JSON documents containing timestamped events. It then sends these documents asynchronously via HTTP POST to the Elasticsearch service (http://elasticsearch:9200).
+
+        Structured Data: Logs are enriched with custom fields like event_type, movie_id, and score. This allows for the creation of business dashboards (e.g., "Show me a pie chart of Positive vs. Negative reviews").
+
+B. Frontend Service (frontend.py)
+
+The frontend provides the user interface for browsing movies and submitting reviews.
+
+    Framework: Built on Streamlit, enabling rapid UI development entirely in Python.
+
+    Decoupled Architecture: The frontend contains zero business logic or database connections. It acts as a pure client, communicating with the backend exclusively via HTTP requests (requests.get, requests.post).
+
+    Configuration: The connection to the backend is defined via the API_BASE_URL environment variable. In Kubernetes, this is set to http://backend:8000, ensuring the frontend talks to the internal cluster service, not localhost.
+
+    Features:
+
+        Freshness Score: Calculates the "Rotten Tomatoes" style score (Positive Reviews / Total Reviews) by querying the /score/{id} endpoint.
+
+        Visual Feedback: Uses color coding (Green for "Certified Hot", Red for "Rotten") to give immediate visual feedback to the user.
+
+3. Infrastructure & Orchestration (Kubernetes)
+
+The infrastructure is defined as code (IaC) using Kubernetes YAML manifests, ensuring reproducibility.
+A. Core Application Components
+
+    Backend Deployment (k8s-backend.yaml):
+
+        Horizontal Pod Autoscaling (HPA): Configured to automatically scale the backend from 1 to 5 replicas if CPU usage exceeds 5%. This ensures high availability during traffic spikes.
+
+        Configuration Injection: Database credentials (DB_HOST, POSTGRES_USER) are injected as Environment Variables, adhering to 12-Factor App principles.
+
+    Frontend Deployment (k8s-frontend.yaml):
+
+        NodePort Service: Exposed on port 30001. This allows external access to the UI (via http://<NodeIP>:30001) while keeping the backend internal.
+
+    Database (k8s-database.yaml):
+
+        Persistence (PVC): A PersistentVolumeClaim requests 1Gi of storage. This maps a physical folder on the host machine to the container's /var/lib/postgresql/data. This ensures that user reviews survive even if the database pod crashes or restarts.
+
+B. Observability Stack (k8s-logging.yaml)
+
+    Elasticsearch: Deployed as a single-node cluster. Crucially, memory limits (-Xmx512m) are applied to prevent the Java process from consuming all available host RAM.
+
+    Kibana: The visualization dashboard, exposed via NodePort 30002. It connects to Elasticsearch via the internal service DNS http://elasticsearch:9200.
+
+C. Ingress Routing (k8s-ingress.yaml)
+
+    Domain Mapping: Instead of using raw IP addresses and ports, an Nginx Ingress Controller routes traffic based on hostnames.
+
+        rottenpotatoes.com → Frontend Service (Port 8501)
+
+        kibana.com → Kibana Service (Port 5601)
+
+        This provides a user-friendly, production-like entry point to the cluster.
+
+4. Automation Pipeline (Jenkins CI/CD)
+
+The Jenkinsfile orchestrates the entire lifecycle. It is designed for security and optimization.
+Pipeline Stages Breakdown
+
+    Checkout:
+
+        Pulls the latest code from the GitHub repository to the Jenkins workspace.
+
+    Train Model (CI):
+
+        Environment Setup: Creates a Python virtual environment and installs dependencies.
+
+        Data Versioning (DVC): Configures a local DVC remote (/tmp/dvc_store) and pulls the specific version of the dataset linked to the current git commit. This guarantees reproducible training.
+
+        History Preservation: Uses a symbolic link (ln -sf) to connect the transient workspace to a persistent folder (/var/lib/jenkins/mlflow_history). This ensures that training history is preserved across builds.
+
+        Artifact Optimization (Crucial Step):
+
+            Problem: MLflow stores every run. Copying the full history makes Docker images massive (GBs).
+
+            Solution: The pipeline script finds the single latest model artifact (model.pkl) and its metadata (MLmodel). It copies only this specific folder to mlruns/latest_model/ for the Docker build. This reduces the image size by over 90%.
+
+    Build Docker Images:
+
+        Builds the Backend and Frontend images using the optimized context. The Backend image now contains the baked-in model artifact.
+
+    Push to Docker Hub:
+
+        Security: Uses Jenkins Credentials Binding (withCredentials logic implied or environment variable binding) to inject Docker Hub credentials safely. It logs in, pushes the images tagged as :latest, and logs out.
+
+    Update Kubernetes (CD):
+
+        Infrastructure First: Applies k8s-database.yaml and k8s-logging.yaml first to ensure dependencies are ready.
+
+        Application Deployment: Applies the backend and frontend manifests.
+
+        Zero-Downtime Update: Executes kubectl rollout restart. This forces Kubernetes to pull the new image (due to imagePullPolicy: Always) and perform a rolling update, ensuring the app never goes offline.
+
+    Post-Actions:
+
+        Sends an email notification to the administrator with the build status (Success/Failure), ensuring immediate awareness of pipeline health.
+
+5. Conclusion
+
+This project successfully demonstrates a mature MLOps architecture. By automating the path from "Code Commit" to "Production Deployment" and integrating a persistent, observable feedback loop, the system resolves the common challenges of manual model deployment. The use of DVC for data, MLflow for model management, Jenkins for orchestration, and ELK for observability creates a robust, scalable platform ready for real-world usage.
+
+
+------------------------------
+
+Here is the breakdown of what happens when you change Data vs. Algorithm and what you need to do manually vs. what is automated.
+Scenario 1: You Change the Algorithm (Code Change)
+
+Example: You change train.py to use a Random Forest instead of Logistic Regression.
+
+    Manual Step: You just commit and push your code to GitHub.
+    Bash
+
+    git add train.py
+    git commit -m "Changed model to Random Forest"
+    git push
+
+    Automatic Chain Reaction:
+
+        Jenkins wakes up: It sees the code change.
+
+        Jenkins pulls data: It runs dvc pull to get the current dataset (no change in data, just code).
+
+        Jenkins trains: It runs python train.py using the new Random Forest logic.
+
+        Jenkins saves model: It produces a new model.pkl.
+
+        Jenkins optimizes: It extracts the new model to mlruns/latest_model.
+
+        Jenkins builds & deploys: It builds a new Docker image with the new model and updates Kubernetes.
+
+    Result: Your app is now running the Random Forest model automatically.
+
+Scenario 2: You Change the Data (Data Change)
+
+Example: You add 5,000 new reviews to data/train.csv.
+
+    Manual Step (The DVC Shuffle): You must manually update the "Receipt" (.dvc file) and the "Storage" (remote). Jenkins cannot read your mind or your local hard drive.
+
+    Do this on your laptop:
+
+        Update the receipt:
+        Bash
+
+dvc add data/train.csv  # Generates a new .dvc file with a new Hash
+
+Upload the package:
+Bash
+Ensure your local DVC knows where to push:
+Bash
+
+dvc remote add -d -f mylocal /tmp/dvc_store
+
+Register your current data:
+Bash
+
+dvc add data/train.csv
+
+Push the data to the storage folder (This is the missing step):
+Bash
+
+dvc push -r mylocal     # Sends the heavy csv to /tmp/dvc_store
+
+Mail the receipt:
+Bash
+
+        git add data/train.csv.dvc
+        git commit -m "Updated training data with 5k new reviews"
+        git push
+
+    Automatic Chain Reaction:
+
+        Jenkins wakes up: It sees the change in data/train.csv.dvc.
+
+        Jenkins pulls data: It runs dvc pull. It reads the new hash from the .dvc file and downloads the new csv from /tmp/dvc_store.
+
+        Jenkins trains: It retrains the model on the new bigger dataset.
+
+        Jenkins deploys: The smarter model goes live.
+
+Summary Table
+Change Type	What YOU do (Manual)	What JENKINS does (Auto)
+Change Algorithm	git push	Trains new logic → Deploys
+Change Data	dvc add → dvc push → git push	Pulls new data → Retrains → Deploys
+
+Key Takeaway: Jenkins automates the consequences (Training/Deployment), but you must manually handle the input (Pushing the Code or Pushing the Data).
+
+
+
+he short answer is no, it should not be automated in the Jenkins pipeline.
+
+Automation is for reacting to changes, not creating them.
+
+Think of dvc add and dvc push exactly like git commit and git push.
+
+    Would you want a script to automatically git commit every time you save a file?
+
+        No, because you might save a broken file or a half-finished sentence. You only commit when you are sure the code is ready.
+
+    The same applies to Data:
+
+        You might be cleaning the CSV, removing rows, or fixing errors.
+
+        You only run dvc push when you are 100% sure: "This data is clean and ready for the model to learn from."
+
+Why Manual is Better (The "Gatekeeper" Logic)
+
+If you automated this (e.g., a script that runs every 10 minutes to upload data), you would risk:
+
+    Corrupting the Pipeline: Uploading a half-empty CSV file while you are still editing it.
+
+    Wasting Storage: Uploading 50 versions of a 1GB file just because you fixed 50 typos.
+
+    Breaking the Model: Jenkins would detect the change, trigger a training run, and fail because the data was bad.
+
+The Correct Workflow
+
+There is a strict separation of duties:
+Role	Action	Who does it?
+The Producer (You)	Decides when the data is ready. Runs dvc add & dvc push.	Manual (On Laptop)
+The Consumer (Jenkins)	Detects the new "Receipt" (.dvc file) and downloads the package.	Automated (In Cloud)
+
+Summary: You (the human) are the Editor. Jenkins (the robot) is the Publisher. The Editor must manually approve the draft before the Publisher prints it.
+----------------------------
+
+1. Will every single model be stored?
+
+YES. Every time Jenkins runs python train.py, MLflow creates a new, unique folder inside /var/lib/jenkins/mlflow_history. It never overwrites old models; it only adds new ones.
+
+    If you change Data: A new folder is created (e.g., Run_55).
+
+    If you change Algorithm: A new folder is created (e.g., Run_56).
+
+    If you fix a typo: A new folder is created (e.g., Run_57).
+
+Your Server's Hard Drive looks like this:
+Plaintext
+
+/var/lib/jenkins/mlflow_history/
+├── 0/
+│   ├── a1b2c3d4... (Run 1 - Logistic Regression, Small Data)
+│   ├── e5f6g7h8... (Run 2 - Random Forest, Small Data)
+│   ├── i9j0k1l2... (Run 3 - Random Forest, Big Data) <-- LATEST
+
+(This is confirmed by your use of ln -sf ... mlruns).
+2. How do I revert to a specific older model?
+
+Currently, your Jenkinsfile is programmed to be "Greedy". It explicitly looks for the newest file:
+Bash
+
+# This command sorts by time and takes the last one (tail -1)
+LATEST_PKL=$(find ... | sort -n | tail -1 ...)
+
+To revert, you have two options. Option A is the "Professional DevOps Way," and Option B is the "Emergency Fix Way."
+Option A: The "GitOps" Revert (Recommended)
+
+In MLOps, we don't usually "point back" to old files. We "roll forward" by reverting the code/data that generated them.
+
+    Identify the bad change: "Oh no, the new Random Forest (Run 3) is terrible!"
+
+    Revert in Git:
+    Bash
+
+    git revert <bad-commit-hash>
+    git push
+
+    What happens:
+
+        Jenkins sees the revert.
+
+        It pulls the old code (Logistic Regression).
+
+        It trains a new run (Run 4) that is mathematically identical to Run 1.
+
+        It deploys Run 4.
+
+        Why this is better: You keep a perfect linear history of deployment, even though you went back to an old logic.
+
+Option B: Manual Pinning (The "Emergency" Way)
+
+If you don't want to retrain and just want to forcefully deploy an exact old folder (e.g., a1b2c3d4), you modify your Jenkinsfile temporarily.
+
+Change this line:
+Bash
+
+# OLD: Auto-detect latest
+# LATEST_PKL=$(find ... | tail -1 ...)
+
+# NEW: Hardcode the specific path to the "Good" model
+LATEST_PKL="/var/lib/jenkins/mlflow_history/0/a1b2c3d4.../artifacts/model.pkl"
+
+When you push this change, Jenkins will ignore the new training and force Docker to package that specific old file.
+Summary
+
+    Storage: Infinite (until your disk fills up). You have a permanent archive of every experiment.
+
+    Reverting: The best way is to revert the Git Commit. Jenkins will re-train the "Old Good Logic" as a "New Good Model" and deploy it automatically.
