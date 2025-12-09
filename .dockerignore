@@ -12,5 +12,4 @@ data/
 __pycache__/
 
 # Ignore the local MLflow storage (We inject only what we need via Jenkins)
-mlruns/
 mlflow_history/
