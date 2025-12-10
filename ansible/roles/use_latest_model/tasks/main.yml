@@ -8,20 +8,8 @@
     rm -rf ml_model || true
     mkdir ml_model
 
-    echo "=== Locating latest model.pkl ==="
-    LATEST_LINE=$(find /home/{{ ansible_user }}/mlflow_history -name "model.pkl" -type f -printf "%T@ %p\n" | sort -n | tail -1)
-
-    if [ -z "$LATEST_LINE" ]; then
-        echo "ERROR: No model.pkl found. Aborting."
-        exit 1
-    fi
-
-    LATEST_PKL_PATH=$(echo "$LATEST_LINE" | cut -d' ' -f2-)
-    echo "Found latest model at: $LATEST_PKL_PATH"
-
-    ARTIFACT_DIR=$(dirname "$LATEST_PKL_PATH")
-    echo "Copying from artifact dir: $ARTIFACT_DIR"
-
-    cp -rv "$ARTIFACT_DIR"/* ml_model/
+    LATEST_RUN_DIR=$(find /home/iiitb/mlflow_history -name "model.pkl" -type f -printf "%p\n" | sort | tail -1 | xargs dirname | xargs dirname) 
+    echo "Run dir: $LATEST_RUN_DIR" 
+    cp -rv "$LATEST_RUN_DIR" ml_model/
   args:
     chdir: /home/{{ ansible_user }}/project_workspace
