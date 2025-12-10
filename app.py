@@ -132,7 +132,7 @@ try:
         log.error("Model Missing", extra={"event_type": "MODEL_LOAD", "status": "FAILED"})
     else:
         model = mlflow.sklearn.load_model(model_uri)
-        latest_run_id = os.path.basename(os.path.dirname(os.path.dirname(model_uri)))
+        latest_run_id = os.path.basename(os.path.dirname(model_uri))
         log.info(model_uri)
         log.info("Model Loaded", extra={"event_type": "MODEL_LOAD", "status": "SUCCESS", "version": latest_run_id})
 
