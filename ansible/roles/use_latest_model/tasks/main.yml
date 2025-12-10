@@ -8,8 +8,8 @@
     rm -rf ml_model || true
     mkdir ml_model
 
-    LATEST_RUN_DIR=$(find /home/iiitb/mlflow_history -name "model.pkl" -type f -printf "%p\n" | sort | tail -1 | xargs dirname | xargs dirname) 
-    echo "Run dir: $LATEST_RUN_DIR" 
-    cp -rv "$LATEST_RUN_DIR" ml_model/
+    pkl=$(find /home/iiitb/mlflow_history -name 'model.pkl' -type f -exec stat -c '%Y %n' {} + 2>/dev/null | sort -nr | head -n1 | cut -d' ' -f2-)
+    grand=$(dirname "$(dirname "$pkl")")
+    mkdir -p ml_model && cp -r "$grand" ml_model/
   args:
     chdir: /home/{{ ansible_user }}/project_workspace
