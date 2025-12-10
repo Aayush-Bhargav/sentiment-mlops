@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: resource-quota
+spec:
+  hard:
+    requests.cpu: "4"           
+    requests.memory: 4Gi        
+    limits.cpu: "8"             
+    limits.memory: 8Gi          
+    requests.storage: 20Gi     
+    persistentvolumeclaims: "5" 
+    pods: "20"                  
+    services: "10"              
+    services.loadbalancers: "1" 
+    services.nodeports: "5"     
+    secrets: "15"               
+    replicationcontrollers: "15"
+    resourcequotas: "1"

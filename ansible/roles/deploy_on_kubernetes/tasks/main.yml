@@ -11,6 +11,7 @@
     kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-frontend.yaml -n {{ k8s_namespace }}
 
     kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-ingress.yaml -n {{ k8s_namespace }}
+    kubectl --kubeconfig={{ kubeconfig_path }} apply -f k8s-resourcequota.yaml -n {{ k8s_namespace }}
 
     kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/elasticsearch -n {{ k8s_namespace }}
     kubectl --kubeconfig={{ kubeconfig_path }} rollout restart deployment/backend-deployment -n {{ k8s_namespace }}
