@@ -1,0 +1,15 @@
+---
+- name: Find latest model for Deployment
+  become: yes
+  become_user: "{{ ansible_user }}"
+  ansible.builtin.shell: |
+    echo "=== Preparing latest_model directory ==="
+    rm -rf mlruns/latest_model || true
+    rm -rf ml_model || true
+    mkdir ml_model
+
+    pkl=$(find /home/iiitb/mlflow_history -name 'model.pkl' -type f -exec stat -c '%Y %n' {} + 2>/dev/null | sort -nr | head -n1 | cut -d' ' -f2-)
+    grand=$(dirname "$(dirname "$pkl")")
+    mkdir -p ml_model && cp -r "$grand" ml_model/
+  args:
+    chdir: /home/{{ ansible_user }}/project_workspace

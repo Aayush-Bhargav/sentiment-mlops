@@ -16,10 +16,10 @@ import requests
 import datetime     
 
 # --- CONFIGURATION ---
-DB_HOST = os.getenv("DB_HOST", "postgres-service")
-DB_USER = os.getenv("POSTGRES_USER", "user")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD", "password")
-DB_NAME = os.getenv("POSTGRES_DB", "rotten_potatoes_db")
+DB_HOST = os.getenv("DB_HOST")
+DB_USER = os.getenv("POSTGRES_USER")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+DB_NAME = os.getenv("POSTGRES_DB")
 SQLALCHEMY_DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}"
 
 # --- SMART LOG HANDLER (This logic extracts the tags) ---
@@ -120,7 +120,7 @@ model = None
 latest_run_id = "Unknown"
 
 try:
-    search_path = "mlruns"
+    search_path = "ml_model"
     model_uri = None
     for root, dirs, files in os.walk(search_path):
         if "model.pkl" in files:
@@ -132,7 +132,8 @@ try:
         log.error("Model Missing", extra={"event_type": "MODEL_LOAD", "status": "FAILED"})
     else:
         model = mlflow.sklearn.load_model(model_uri)
-        latest_run_id = os.path.basename(os.path.dirname(os.path.dirname(model_uri)))
+        latest_run_id = os.path.basename(os.path.dirname(model_uri))
+        log.info(model_uri)
         log.info("Model Loaded", extra={"event_type": "MODEL_LOAD", "status": "SUCCESS", "version": latest_run_id})
 
 except Exception as e:
@@ -147,9 +148,9 @@ def seed_database(db: Session):
 
     log.info("Seeding Database", extra={"event_type": "DB_SEED", "status": "STARTED"})
     try:
-        with open("initial_movies.json", "r") as f:
+        with open("data/initial_movies.json", "r") as f:
             initial_movies = json.load(f)
-        with open("initial_reviews.json", "r") as f:
+        with open("data/initial_reviews.json", "r") as f:
             initial_reviews_data = json.load(f)
     except Exception as e:
         log.error("Seeding Failed", extra={"event_type": "DB_SEED", "status": "FAILED", "error": str(e)})

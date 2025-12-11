@@ -1,0 +1,29 @@
+---
+- name: "MLOps Pipeline: Configure, Build, Train, & Deploy on Host(s)'"
+  hosts: server
+  gather_facts: yes
+
+  vars_files:
+    - rotpot_vault.yml
+  
+  vars:
+    # Variables passed from the Jenkinsfile environment
+    dockerhub_user: "{{ lookup('env', 'DOCKER_CREDS_USR') }}"
+    dockerhub_pass: "{{ lookup('env', 'DOCKER_CREDS_PSW') }}"
+    k8s_namespace: "rottenpotatoes"
+    kubeconfig_path: "/home/{{ ansible_user }}/.kube/config"
+    backend_image: "{{ lookup('env', 'BACKEND_IMAGE') }}"
+    frontend_image: "{{ lookup('env', 'FRONTEND_IMAGE') }}"
+    docker_tag: "{{ lookup('env', 'DOCKER_TAG') }}"
+  
+  roles:
+    - update_system
+    - install_docker
+    - install_kubernetes
+    - set_up_workspace
+    - train_model
+    - use_latest_model
+    - build_and_push_to_docker
+    - prepare_kubernetes
+    - deploy_on_kubernetes
+    - configure_kibana

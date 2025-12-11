@@ -1,15 +1,19 @@
-# Ignore the virtual environment (Heavy & Useless for Docker)
+# 1. MLflow and Machine Learning Artifacts (Critical for Size Reduction)
+.dvc/
+*.dvc
+mlruns/
+
+# 2. Python Environment and Cache
 venv/
-env/
-
-# Ignore the data folder (We don't want training data in the app image)
-data/
-
-# Ignore git history
-.git/
-
-# Ignore cached python files
+.venv/
 __pycache__/
+*.pyc
+*.egg-info/
 
-# Ignore the local MLflow storage (We inject only what we need via Jenkins)
-mlflow_history/
+# 3. Version Control and Temporary Files
+.git/
+.gitignore
+*.log
+*.pdf
+*.zip
+*.csv

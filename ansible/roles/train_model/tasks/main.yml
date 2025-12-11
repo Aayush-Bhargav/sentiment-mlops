@@ -1,0 +1,28 @@
+---
+- name: Train Model
+  become: yes
+  become_user: "{{ ansible_user }}"
+  ansible.builtin.shell: |
+    echo "=== Starting MLOps Training ==="
+    set -e
+
+    echo "=== Creating new virtualenv ==="
+    python3 -m venv venv
+    . venv/bin/activate
+
+    pip install --upgrade pip
+    pip install -r requirements.txt
+
+    echo "=== DVC pull ==="
+    dvc remote remove mylocal || true
+    dvc remote add -d -f mylocal /tmp/dvc_store
+    dvc pull
+
+    echo "=== Linking MLflow history ==="
+    rm -rf mlruns || true
+    ln -s /home/{{ ansible_user }}/mlflow_history mlruns
+
+    echo "=== Running Training Script ==="
+    python3 train.py
+  args:
+    chdir: /home/{{ ansible_user }}/project_workspace
