@@ -1,5 +1,23 @@
-Kindly refer ```SPE_Project_Report.pdf``` for all details.
+# 🥔 Rotten Potatoes: MLOps-Powered Movie Review Hub
 
+**Rotten Potatoes** is a full-stack application that enables users to browse movies and receive real-time sentiment scores on their reviews. Beyond the UI, it serves as a comprehensive implementation of a modern **MLOps pipeline**, automating the lifecycle from data versioning to production deployment on Kubernetes.
+
+The core objective of this project was to build a reproducible, self-healing, and automated infrastructure rather than just a standalone web app. It orchestrates the entire software lifecycle—data versioning, model training, container building, and deployment—without manual intervention.
+
+## 🛠️ Tech Stack & Key Features
+
+* **Full-Stack Application:** Built with **FastAPI** (Backend) and **Streamlit** (Frontend) backed by **PostgreSQL**.
+* **CI/CD Pipeline:** Fully automated workflow orchestrated by **Jenkins** and configured via **Ansible** playbooks.
+* **MLOps & Data Versioning:**
+    * **DVC (Data Version Control)** ensures training data immutability and reproducibility.
+    * **MLflow** tracks experiments and manages model artifact promotion.
+* **Infrastructure:**
+    * **Docker & Kubernetes (Minikube):** Containerized microservices with Namespace isolation.
+    * **Autoscaling:** Implements Horizontal Pod Autoscaling (HPA) to handle traffic spikes.
+* **Observability:** Integrated **ELK Stack (Elasticsearch & Kibana)** for structured logging and real-time system monitoring.
+  
+Kindly refer ```SPE_Project_Report.pdf``` for more details.
+***Project Structure:***
 ```
 .
 ├── ansible
